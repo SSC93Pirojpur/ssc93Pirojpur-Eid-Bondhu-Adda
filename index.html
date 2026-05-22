@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Google Fonts - Elegant Bengali Font -->
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&family=Rozha+One&display=swap" rel="stylesheet">
     
@@ -198,15 +200,28 @@
         }
         .status-pass { background: #d1e7dd; color: #0f5132; }
         .status-fail { background: #f8d7da; color: #842029; }
-        .status-pending { background: #fff3cd; color: #664d03; }
 
-        .btn-download { background-color: #0dcaf0; color: var(--dark); font-weight: bold; }
-        .btn-download:hover { background-color: #0aa2c0; }
-
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
+        #reader { 
+            width: 100%; 
+            background: #fafafa;
+            border: 2px dashed #ccc !important;
+            border-radius: 8px; 
+            overflow: hidden;
+        }
         .scan-info { font-size: 1.1rem; line-height: 1.8; margin-top: 15px; }
-        .member-photo { width: 100px; height: 120px; border-radius: 6px; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 10px; }
-
+        .action-btn {
+            margin-bottom: 8px;
+            text-align: left;
+            padding-left: 20px;
+            font-size: 1.05rem;
+        }
+        .action-btn.disabled-state {
+            background-color: #6c757d !important;
+            cursor: not-allowed;
+            opacity: 0.65;
+            transform: none !important;
+            box-shadow: none !important;
+        }
         .empty-state { text-align: center; color: #999; padding: 30px; font-size: 1.1rem; }
     </style>
 </head>
@@ -220,9 +235,9 @@
 
     <!-- Navigation Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('registration')">📝 নিবন্ধন</button>
-        <button class="tab-btn" onclick="switchTab('dashboard')">📊 ড্যাশবোর্ড</button>
-        <button class="tab-btn" onclick="switchTab('bouncer')">🔐 গেট ম্যানেজমেন্ট</button>
+        <button class="tab-btn active" onclick="switchTab(event, 'registration')">📝 নিবন্ধন</button>
+        <button class="tab-btn" onclick="switchTab(event, 'dashboard')">📊 ড্যাশবোর্ড</button>
+        <button class="tab-btn" onclick="switchTab(event, 'bouncer')">🔐 গেট ম্যানেজমেন্ট</button>
     </div>
 
     <!-- TAB 1: REGISTRATION -->
@@ -285,16 +300,18 @@
     <div id="bouncer" class="view-panel">
         <div class="grid">
             <div class="card" style="text-align: center;">
-                <h2>কিউআর কোড স্ক্যানার</h2>
-                <p style="color: #666; margin-bottom: 15px;">মোবাইল নম্বর দিয়ে অনুসন্ধান করুন</p>
+                <h2>কিউআর কোড স্ক্যানার (Live Camera)</h2>
+                <div id="reader" style="margin-bottom: 20px;"></div>
+                <hr style="border: 1px solid #eee; margin: 15px 0;">
+                <p style="color: #666; font-weight: bold; margin-bottom: 10px;">অথবা ম্যানুয়ালি মোবাইল নম্বর দিয়ে খুঁজুন</p>
                 <input type="tel" id="scanPhone" placeholder="01712345678" style="margin-bottom: 10px;">
                 <button onclick="manualSearch()">অনুসন্ধান করুন 🔍</button>
             </div>
 
             <div class="card">
-                <h2>সদস্য তথ্য</h2>
+                <h2>সদস্য ভেরিফিকেশন প্যানেল</h2>
                 <div id="scanDetails" class="scan-info" style="color: #999;">
-                    অনুসন্ধান করার পর সদস্যের তথ্য এখানে প্রদর্শিত হবে
+                    কিউআর কোড স্ক্যান করুন অথবা মোবাইল নম্বর দিয়ে অনুসন্ধান করার পর তথ্য এখানে প্রদর্শিত হবে।
                 </div>
             </div>
         </div>
@@ -306,6 +323,7 @@
     const canvas = document.getElementById('ticketCanvas');
     const ctx = canvas.getContext('2d');
     let lastRegisteredMember = null;
+    let html5QrcodeScanner = null;
 
     window.onload = () => {
         console.log("Total members loaded:", registeredMembers.length);
@@ -313,45 +331,46 @@
         drawCardBase("আপনার নাম এখানে", "01712345678");
     };
 
-    // TAB SWITCHING
-    function switchTab(tabName) {
+    // TAB SWITCHING MANAGEMENT
+    function switchTab(event, tabName) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
         event.target.classList.add('active');
+
+        // Start scanner if bouncer tab is picked, otherwise shut it off safely
+        if (tabName === 'bouncer') {
+            startQRScanner();
+        } else {
+            stopQRScanner();
+        }
     }
 
-    // DRAW ELEGANT CARD WITH BENGALI TEXT
+    // DRAW PASS BLUEPRINT
     function drawCardBase(name, phone) {
-        // Background gradient
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, '#0f5132');
         gradient.addColorStop(1, '#146c43');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Gold decorative border
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 8;
         ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
 
-        // Inner decorative line
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 2;
         ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
 
-        // Main Title - Elegant Bengali
         ctx.fillStyle = '#d4af37';
         ctx.font = 'bold 48px "Rozha One", serif';
         ctx.textAlign = 'center';
         ctx.fillText('ঈদ বন্ধু আড্ডা ২০২৬', canvas.width / 2, 100);
 
-        // Subtitle
         ctx.fillStyle = '#ffffff';
         ctx.font = '24px "Aladin", sans-serif';
         ctx.fillText('আয়োজনেঃ এসএসসি-৯৩ পিরোজপুর', canvas.width / 2, 145);
 
-        // Decorative line
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -359,18 +378,15 @@
         ctx.lineTo(canvas.width - 150, 165);
         ctx.stroke();
 
-        // Member Name
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 42px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(name, canvas.width / 2, 270);
 
-        // Mobile Number
         ctx.fillStyle = '#b6effb';
         ctx.font = '20px "Baloo 2", sans-serif';
         ctx.fillText('মোবাইল: ' + phone, canvas.width / 2, 320);
 
-        // QR Code
         const qr = new QRious({ value: phone, size: 140 });
         const qrImg = new Image();
         qrImg.src = qr.toDataURL();
@@ -381,11 +397,10 @@
             ctx.strokeRect(canvas.width - 170, 240, 150, 150);
         };
 
-        // Footer text
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = 'italic 16px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('গেটে কিউআর কোড প্রদর্শন করুন', canvas.width / 2, 405);
+        ctx.fillText('게টে কিউআর কোড প্রদর্শন করুন', canvas.width / 2, 405);
     }
 
     // REGISTER MEMBER
@@ -409,15 +424,14 @@
         lastRegisteredMember = newMember;
         localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
 
-        console.log('✓ New member registered:', newMember);
         drawCardBase(name, phone);
         document.getElementById('downloadSingleBtn').style.display = 'block';
         updateTable();
         document.getElementById('regForm').reset();
-        alert('✓ নিবন্ধন সফল হয়েছে!');
+        alert('✓ ' + name + ' এর নিবন্ধন সফল হয়েছে!');
     }
 
-    // UPDATE TABLE WITH STATUS INDICATORS
+    // DASHBOARD DATABASE TABLE REFRESH
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
@@ -440,58 +454,111 @@
         });
     }
 
-    // MANUAL SEARCH & BOUNCER INTERFACE
+    // LIVE QR SCANNER INITIALIZATION
+    function startQRScanner() {
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 15, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            }, false);
+        }
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    function stopQRScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(err => console.error("Scanner clear failed:", err));
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        // Scanned text matches the member phone number
+        document.getElementById('scanPhone').value = decodedText.trim();
+        renderBouncerPanel(decodedText.trim());
+    }
+
+    function onScanFailure(error) {
+        // Silent capture of video frames looking for matching matrix code
+    }
+
+    // MANUAL SEARCH INTERFACE
     function manualSearch() {
         const phone = document.getElementById('scanPhone').value.trim();
+        renderBouncerPanel(phone);
+    }
+
+    // SHARED RE-RENDERING ENGINE FOR SCAN & MANUAL SEARCH
+    function renderBouncerPanel(phone) {
         const member = registeredMembers.find(m => m.phone === phone);
         const resultDiv = document.getElementById('scanDetails');
 
         if(!member) {
-            resultDiv.innerHTML = '<p style="color:red; font-weight:bold; font-size:1.2rem;">❌ সদস্য খুঁজে পাওয়া যায়নি!</p>';
+            resultDiv.innerHTML = '<p style="color:red; font-weight:bold; font-size:1.2rem; text-align:center;">❌ সদস্য খুঁজে পাওয়া যায়নি! (Invalid Pass)</p>';
             return;
         }
 
-        // Display member info with ONE-TIME action buttons
+        // Render controls with structural defenses against duplicate requests
         resultDiv.innerHTML = `
-            <div style="text-align: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary); margin: 0 0 10px 0;">${member.name}</h3>
-                <p style="margin: 5px 0; color: #666;">📱 ${member.phone}</p>
-                <p style="margin: 5px 0; color: #666;">💳 ${member.paymentInfo}</p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e2e3e5; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin: 0 0 10px 0; font-size: 1.5rem;">👤 নাম: ${member.name}</h3>
+                <p style="margin: 5px 0; color: #333; font-size: 1.05rem;">📱 <b>মোবাইল:</b> ${member.phone}</p>
+                <p style="margin: 5px 0; color: #666; font-size: 1rem;">💳 <b>পেমেন্ট তথ্য:</b> ${member.paymentInfo}</p>
             </div>
-            <hr style="border: 1px dashed #ccc; margin: 15px 0;">
-            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 15px;">
-                <button onclick="updateStatus('${phone}', 'checkedIn')" style="background: ${member.checkedIn ? '#666' : '#198754'}; ${member.checkedIn ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.checkedIn ? 'disabled' : ''}>
-                    ${member.checkedIn ? '✓ প্রবেশ সম্পন্ন' : '🚪 প্রবেশ অনুমোদন করুন'}
+            <p style="color: #444; font-weight: bold; margin-bottom: 10px; border-left: 3px solid var(--secondary); padding-left: 8px;">সার্ভিস ও বিতরণ কন্ট্রোল (একবারই ক্লিক করা যাবে):</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                <button class="action-btn ${member.checkedIn ? 'disabled-state' : ''}" 
+                        onclick="updateStatus('${phone}', 'checkedIn')" 
+                        style="background: #198754;" ${member.checkedIn ? 'disabled' : ''}>
+                    ${member.checkedIn ? '🔒 গেট প্রবেশ সম্পন্ন (Duplication Blocked)' : '🚪 গেট প্রবেশ অনুমোদন করুন'}
                 </button>
-                <button onclick="updateStatus('${phone}', 'mealServed')" style="background: ${member.mealServed ? '#666' : '#0dcaf0'}; color: ${member.mealServed ? 'white' : 'black'}; ${member.mealServed ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.mealServed ? 'disabled' : ''}>
-                    ${member.mealServed ? '✓ খাবার প্রদান সম্পন্ন' : '🍽️ খাবার প্রদান করুন'}
+                
+                <button class="action-btn ${member.mealServed ? 'disabled-state' : ''}" 
+                        onclick="updateStatus('${phone}', 'mealServed')" 
+                        style="background: #0dcaf0; color: ${member.mealServed ? 'white' : 'black'};" ${member.mealServed ? 'disabled' : ''}>
+                    ${member.mealServed ? '🔒 দুপুরের খাবার প্রদান সম্পন্ন' : '🍽️ দুপুরের খাবার প্রদান করুন'}
                 </button>
-                <button onclick="updateStatus('${phone}', 'snackServed')" style="background: ${member.snackServed ? '#666' : '#ffc107'}; color: ${member.snackServed ? 'white' : 'black'}; ${member.snackServed ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.snackServed ? 'disabled' : ''}>
-                    ${member.snackServed ? '✓ নাস্তা প্রদান সম্পন্ন' : '🥤 নাস���তা প্রদান করুন'}
+                
+                <button class="action-btn ${member.snackServed ? 'disabled-state' : ''}" 
+                        onclick="updateStatus('${phone}', 'snackServed')" 
+                        style="background: #ffc107; color: black;" ${member.snackServed ? 'disabled' : ''}>
+                    ${member.snackServed ? '🔒 বিকালের নাস্তা প্রদান সম্পন্ন' : '🥤 বিকালের নাস্তা প্রদান করুন'}
                 </button>
-                <button onclick="updateStatus('${phone}', 'souvenirGiven')" style="background: ${member.souvenirGiven ? '#666' : '#e83e8c'}; color: white; ${member.souvenirGiven ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.souvenirGiven ? 'disabled' : ''}>
-                    ${member.souvenirGiven ? '✓ স্মারক প্রদান সম্পন্ন' : '🎁 স্মারক প্রদান করুন'}
+                
+                <button class="action-btn ${member.souvenirGiven ? 'disabled-state' : ''}" 
+                        onclick="updateStatus('${phone}', 'souvenirGiven')" 
+                        style="background: #e83e8c; color: white;" ${member.souvenirGiven ? 'disabled' : ''}>
+                    ${member.souvenirGiven ? '🔒 উৎসব স্মারক (Souvenir) প্রদান সম্পন্ন' : '🎁 উৎসব স্মারক প্রদান করুন'}
                 </button>
             </div>
         `;
     }
 
-    // UPDATE STATUS - ONE TIME ONLY
+    // SECURE TRANSACTION HANDLER
     function updateStatus(phone, property) {
         const member = registeredMembers.find(m => m.phone === phone);
-        if(!member || member[property]) {
-            alert('❌ এই সেবা ইতিমধ্যে প্রদান করা হয়েছে!');
+        
+        // Anti-duplication fail-safe checkpoint
+        if(!member) {
+            alert('❌ ত্রুটি: সদস্য পাওয়া যায়নি!');
+            return;
+        }
+        if(member[property]) {
+            alert('❌ অ্যালার্ট: এই সেবাটি ইতিমধ্যে প্রদান করা হয়েছে! ডাটা ডুপ্লিকেট করা সম্ভব নয়।');
             return;
         }
 
+        // Commit status change state
         member[property] = true;
         localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
-        updateTable();
-        manualSearch(); // Refresh bouncer view
-        alert('✓ আপডেট সফল!');
+        
+        updateTable(); // Update spreadsheet sync logs
+        renderBouncerPanel(phone); // Hot-reload control panel state UI
+        alert('✓ ডাটাবেস সফলভাবে আপডেট করা হয়েছে!');
     }
 
-    // DOWNLOAD CARD
+    // DOWNLOAD INDIVIDUAL CARD
     function downloadSingleCard() {
         if (!lastRegisteredMember) return;
         let link = document.createElement('a');
@@ -500,7 +567,7 @@
         link.click();
     }
 
-    // BULK DOWNLOAD ZIP
+    // BULK ARCHIVE ENGINE (.ZIP)
     async function exportAllToZip() {
         if(registeredMembers.length === 0) return alert('❌ কোনো ডাটা নেই!');
         const zip = new JSZip();
