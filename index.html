@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -330,6 +330,7 @@
     const ctx = canvas.getContext('2d');
     let lastRegisteredMember = null;
     let html5QrcodeScanner = null;
+    let currentScannedPhone = ""; // Holds active scan to block UI flickering loops
 
     window.onload = async () => {
         console.log("Total members loaded:", registeredMembers.length);
@@ -337,7 +338,7 @@
         await drawCardBase("আপনার নাম এখানে", "01712345678", "");
     };
 
-    // TAB SWITCHING MANAGEMENT
+    // TAB SWITCHING MANAGEMENT WITH SCANNER CLEANUP CLEANROOM
     function switchTab(event, tabName) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -363,14 +364,12 @@
 
     // DRAW PASS BLUEPRINT WITH PHOTO INTEGRATION
     async function drawCardBase(name, phone, photoSrc) {
-        // Reset and draw background
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, '#0f5132');
         gradient.addColorStop(1, '#146c43');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Gold Outlines
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 8;
         ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
@@ -378,7 +377,6 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
 
-        // Header Title
         ctx.fillStyle = '#d4af37';
         ctx.font = 'bold 48px "Rozha One", serif';
         ctx.textAlign = 'center';
@@ -395,7 +393,6 @@
         ctx.lineTo(canvas.width - 150, 165);
         ctx.stroke();
 
-        // Center Profile Text
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 40px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
@@ -410,7 +407,7 @@
         ctx.textAlign = 'center';
         ctx.fillText('গেটে কিউআর কোড ও ফটো ভেরিফাই করুন', canvas.width / 2, 405);
 
-        // 1. Draw QR Code (Right Side Positioned)
+        // Draw QR Code
         const qr = new QRious({ value: phone, size: 150 });
         try {
             const qrImg = await loadImage(qr.toDataURL());
@@ -422,7 +419,7 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(canvas.width - 200, 210, 150, 150);
 
-        // 2. Draw Member Photo (Left Side Positioned)
+        // Draw Member Photo
         if (photoSrc) {
             try {
                 const photoImg = await loadImage(photoSrc);
@@ -447,7 +444,7 @@
         ctx.fillText('ফটো যুক্ত নেই', 125, 290);
     }
 
-    // IMAGE COMPRESSOR TO SAFEGUARD STORAGE LIMITS
+    // IMAGE COMPRESSOR
     function compressImageFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -456,7 +453,7 @@
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    const maxCoord = 300; // Passport square resolution bounding box
+                    const maxCoord = 300;
                     let width = img.width;
                     let height = img.height;
 
@@ -477,8 +474,6 @@
                     tempCanvas.height = height;
                     const tempCtx = tempCanvas.getContext('2d');
                     tempCtx.drawImage(img, 0, 0, width, height);
-                    
-                    // Output lightweight compressed Base64
                     resolve(tempCanvas.toDataURL('image/jpeg', 0.75));
                 };
             };
@@ -504,7 +499,7 @@
             try {
                 compressedPhotoBase64 = await compressImageFile(photoFileInput);
             } catch (e) {
-                console.error("Compression failed, running uncompressed fallback", e);
+                console.error("Compression failed", e);
             }
         }
 
@@ -520,7 +515,7 @@
         try {
             localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
         } catch (e) {
-            alert('⚠ ডাটাবেস মেমোরি পূর্ণ সতর্কবার্তা! খুব বড় সাইজের ছবি পরিবর্তন করে ট্রাই করুন।');
+            alert('⚠ ডাটাবেস মেমোরি পূর্ণ সতর্কবার্তা! অনুগ্রহ করে ছোট সাইজের ছবি ব্যবহার করুন।');
         }
 
         await drawCardBase(name, phone, compressedPhotoBase64);
@@ -530,7 +525,7 @@
         alert('✓ ' + name + ' এর ছবিসহ নিবন্ধন সফল হয়েছে!');
     }
 
-    // DASHBOARD DATABASE TABLE REFRESH WITH PREVIEWS
+    // DASHBOARD DATABASE TABLE REFRESH
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
@@ -558,37 +553,68 @@
         });
     }
 
-    // LIVE QR SCANNER INITIALIZATION
+    // BULKPROOF LIFECYCLE QR SCANNER HANDLERS
     function startQRScanner() {
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-                fps: 15, 
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            }, false);
+        // Clean out any remnants or raw DOM mutations left behind by previous hooks
+        const container = document.getElementById('reader');
+        if (container) container.innerHTML = "";
+
+        if (html5QrcodeScanner) {
+            try {
+                html5QrcodeScanner.clear();
+            } catch (e) {
+                console.log("Scanner reset adjustment non-critical catch");
+            }
+            html5QrcodeScanner = null;
         }
+
+        // Initialize a clean instance setup
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true
+        }, false);
+        
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 
     function stopQRScanner() {
         if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().catch(err => console.error("Scanner clean failure:", err));
+            html5QrcodeScanner.clear().then(() => {
+                html5QrcodeScanner = null;
+                currentScannedPhone = ""; // Reset scan memory on close
+            }).catch(err => {
+                console.error("Scanner engine closure fallback:", err);
+                html5QrcodeScanner = null;
+                currentScannedPhone = "";
+            });
         }
     }
 
     function onScanSuccess(decodedText) {
-        document.getElementById('scanPhone').value = decodedText.trim();
-        renderBouncerPanel(decodedText.trim());
+        const cleanedText = decodedText.trim();
+        
+        // Prevent interface rendering loop if holding the exact same card under camera
+        if (cleanedText === currentScannedPhone) {
+            return;
+        }
+        
+        currentScannedPhone = cleanedText;
+        document.getElementById('scanPhone').value = cleanedText;
+        renderBouncerPanel(cleanedText);
     }
 
-    function onScanFailure(error) {}
+    function onScanFailure(error) {
+        // Soft loop monitoring frames silently
+    }
 
     function manualSearch() {
         const phone = document.getElementById('scanPhone').value.trim();
+        currentScannedPhone = phone; // Override matching memory pool
         renderBouncerPanel(phone);
     }
 
-    // BOUNCER DISPATCH CONTROLLER WITH VISUAL FACE CHECK
+    // BOUNCER PANEL RENDERING
     function renderBouncerPanel(phone) {
         const member = registeredMembers.find(m => m.phone === phone);
         const resultDiv = document.getElementById('scanDetails');
@@ -663,12 +689,12 @@
         link.click();
     }
 
-    // BULK ARCHIVE ENGINE (.ZIP) WITH PHOTO INJECTIONS
+    // BULK ARCHIVE ENGINE (.ZIP)
     async function exportAllToZip() {
         if(registeredMembers.length === 0) return alert('❌ কোনো ডাটা নেই!');
         const zip = new JSZip();
         
-        alert('📦 সব কার্ড প্রসেস হচ্ছে, ছবির সাইজের উপর ভিত্তি করে কিছুক্ষণ সময় লাগতে পারে। অনুগ্রহ করে অপেক্ষা করুন...');
+        alert('📦 সব কার্ড প্রসেস হচ্ছে, ছবির সাইজের উপর ভিত্তি করে কিছু সময় লাগতে পারে। অনুগ্রহ করে অপেক্ষা করুন...');
         
         for (let i = 0; i < registeredMembers.length; i++) {
             const m = registeredMembers[i];
@@ -677,7 +703,6 @@
             zip.file(`${m.name}_${m.phone}_Pass.png`, blob);
         }
         
-        // Reset preview area to last registered state
         if(lastRegisteredMember) {
             await drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone, lastRegisteredMember.photoUrl);
         } else {
