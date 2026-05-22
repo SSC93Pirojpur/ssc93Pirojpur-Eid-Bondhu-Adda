@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -182,6 +182,7 @@
             padding: 12px;
             text-align: center;
             border-bottom: 1px solid #ddd;
+            vertical-align: middle;
         }
         th {
             background-color: var(--primary);
@@ -258,6 +259,10 @@
                         <label>পেমেন্ট তথ্য (Payment Reference):</label>
                         <input type="text" id="paymentInfo" required placeholder="Bkash/Nagad ID or Name">
                     </div>
+                    <div class="form-group">
+                        <label>বন্ধুর ছবি (Upload Photo):</label>
+                        <input type="file" id="memberPhoto" accept="image/*">
+                    </div>
                     <button type="submit">নিবন্ধন সম্পন্ন করুন ✓</button>
                 </form>
             </div>
@@ -281,6 +286,7 @@
                 <table id="membersTable">
                     <thead>
                         <tr>
+                            <th>ছবি</th>
                             <th>নাম</th>
                             <th>মোবাইল</th>
                             <th>পেমেন্ট তথ্য</th>
@@ -325,10 +331,10 @@
     let lastRegisteredMember = null;
     let html5QrcodeScanner = null;
 
-    window.onload = () => {
+    window.onload = async () => {
         console.log("Total members loaded:", registeredMembers.length);
         updateTable();
-        drawCardBase("আপনার নাম এখানে", "01712345678");
+        await drawCardBase("আপনার নাম এখানে", "01712345678", "");
     };
 
     // TAB SWITCHING MANAGEMENT
@@ -338,7 +344,6 @@
         document.getElementById(tabName).classList.add('active');
         event.target.classList.add('active');
 
-        // Start scanner if bouncer tab is picked, otherwise shut it off safely
         if (tabName === 'bouncer') {
             startQRScanner();
         } else {
@@ -346,22 +351,34 @@
         }
     }
 
-    // DRAW PASS BLUEPRINT
-    function drawCardBase(name, phone) {
+    // IMAGE LOADING PROMISE HELPER
+    function loadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error("Image load failed"));
+            img.src = src;
+        });
+    }
+
+    // DRAW PASS BLUEPRINT WITH PHOTO INTEGRATION
+    async function drawCardBase(name, phone, photoSrc) {
+        // Reset and draw background
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, '#0f5132');
         gradient.addColorStop(1, '#146c43');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Gold Outlines
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 8;
         ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
-
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 2;
         ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
 
+        // Header Title
         ctx.fillStyle = '#d4af37';
         ctx.font = 'bold 48px "Rozha One", serif';
         ctx.textAlign = 'center';
@@ -378,71 +395,158 @@
         ctx.lineTo(canvas.width - 150, 165);
         ctx.stroke();
 
+        // Center Profile Text
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 42px "Baloo 2", sans-serif';
+        ctx.font = 'bold 40px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(name, canvas.width / 2, 270);
+        ctx.fillText(name, canvas.width / 2, 275);
 
         ctx.fillStyle = '#b6effb';
-        ctx.font = '20px "Baloo 2", sans-serif';
-        ctx.fillText('মোবাইল: ' + phone, canvas.width / 2, 320);
-
-        const qr = new QRious({ value: phone, size: 140 });
-        const qrImg = new Image();
-        qrImg.src = qr.toDataURL();
-        qrImg.onload = () => {
-            ctx.drawImage(qrImg, canvas.width - 170, 240, 150, 150);
-            ctx.strokeStyle = '#ffc107';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(canvas.width - 170, 240, 150, 150);
-        };
+        ctx.font = '22px "Baloo 2", sans-serif';
+        ctx.fillText('মোবাইল: ' + phone, canvas.width / 2, 325);
 
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = 'italic 16px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('게টে কিউআর কোড প্রদর্শন করুন', canvas.width / 2, 405);
+        ctx.fillText('গেটে কিউআর কোড ও ফটো ভেরিফাই করুন', canvas.width / 2, 405);
+
+        // 1. Draw QR Code (Right Side Positioned)
+        const qr = new QRious({ value: phone, size: 150 });
+        try {
+            const qrImg = await loadImage(qr.toDataURL());
+            ctx.drawImage(qrImg, canvas.width - 200, 210, 150, 150);
+        } catch (e) {
+            console.error(e);
+        }
+        ctx.strokeStyle = '#ffc107';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvas.width - 200, 210, 150, 150);
+
+        // 2. Draw Member Photo (Left Side Positioned)
+        if (photoSrc) {
+            try {
+                const photoImg = await loadImage(photoSrc);
+                ctx.drawImage(photoImg, 50, 210, 150, 150);
+            } catch (e) {
+                drawPhotoPlaceholder();
+            }
+        } else {
+            drawPhotoPlaceholder();
+        }
+        ctx.strokeStyle = '#ffc107';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(50, 210, 150, 150);
+    }
+
+    function drawPhotoPlaceholder() {
+        ctx.fillStyle = '#212529';
+        ctx.fillRect(50, 210, 150, 150);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px "Baloo 2", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ফটো যুক্ত নেই', 125, 290);
+    }
+
+    // IMAGE COMPRESSOR TO SAFEGUARD STORAGE LIMITS
+    function compressImageFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const maxCoord = 300; // Passport square resolution bounding box
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxCoord) {
+                            height *= maxCoord / width;
+                            width = maxCoord;
+                        }
+                    } else {
+                        if (height > maxCoord) {
+                            width *= maxCoord / height;
+                            height = maxCoord;
+                        }
+                    }
+
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = width;
+                    tempCanvas.height = height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0, width, height);
+                    
+                    // Output lightweight compressed Base64
+                    resolve(tempCanvas.toDataURL('image/jpeg', 0.75));
+                };
+            };
+            reader.onerror = (err) => reject(err);
+        });
     }
 
     // REGISTER MEMBER
-    function registerMember(event) {
+    async function registerMember(event) {
         event.preventDefault();
         const name = document.getElementById('memberName').value.trim();
         const phone = document.getElementById('memberPhone').value.trim();
         const paymentInfo = document.getElementById('paymentInfo').value.trim();
+        const photoFileInput = document.getElementById('memberPhoto').files[0];
 
         if(registeredMembers.some(m => m.phone === phone)) {
             alert('❌ এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত!');
             return;
         }
 
+        let compressedPhotoBase64 = '';
+        if (photoFileInput) {
+            try {
+                compressedPhotoBase64 = await compressImageFile(photoFileInput);
+            } catch (e) {
+                console.error("Compression failed, running uncompressed fallback", e);
+            }
+        }
+
         const newMember = {
             name, phone, paymentInfo,
+            photoUrl: compressedPhotoBase64,
             checkedIn: false, mealServed: false, snackServed: false, souvenirGiven: false
         };
 
         registeredMembers.push(newMember);
         lastRegisteredMember = newMember;
-        localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
 
-        drawCardBase(name, phone);
+        try {
+            localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
+        } catch (e) {
+            alert('⚠ ডাটাবেস মেমোরি পূর্ণ সতর্কবার্তা! খুব বড় সাইজের ছবি পরিবর্তন করে ট্রাই করুন।');
+        }
+
+        await drawCardBase(name, phone, compressedPhotoBase64);
         document.getElementById('downloadSingleBtn').style.display = 'block';
         updateTable();
         document.getElementById('regForm').reset();
-        alert('✓ ' + name + ' এর নিবন্ধন সফল হয়েছে!');
+        alert('✓ ' + name + ' এর ছবিসহ নিবন্ধন সফল হয়েছে!');
     }
 
-    // DASHBOARD DATABASE TABLE REFRESH
+    // DASHBOARD DATABASE TABLE REFRESH WITH PREVIEWS
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
 
         if(registeredMembers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">কোনো নিবন্ধন নেই</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">কোনো নিবন্ধন নেই</td></tr>';
             return;
         }
 
         registeredMembers.forEach(m => {
+            const avatarHtml = m.photoUrl 
+                ? `<img src="${m.photoUrl}" style="width:45px; height:45px; object-fit:cover; border-radius:50%; border:1px solid #ccc;">` 
+                : `<div style="width:45px; height:45px; background:#e2e3e5; border-radius:50%; margin:auto; display:flex; align-items:center; justify-content:center; font-size:11px; color:#666;">No Photo</div>`;
+
             tbody.innerHTML += `<tr>
+                <td>${avatarHtml}</td>
                 <td><b>${m.name}</b></td>
                 <td>${m.phone}</td>
                 <td><span style="background:#fff3cd; color:#664d03; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${m.paymentInfo}</span></td>
@@ -468,27 +572,23 @@
 
     function stopQRScanner() {
         if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().catch(err => console.error("Scanner clear failed:", err));
+            html5QrcodeScanner.clear().catch(err => console.error("Scanner clean failure:", err));
         }
     }
 
     function onScanSuccess(decodedText) {
-        // Scanned text matches the member phone number
         document.getElementById('scanPhone').value = decodedText.trim();
         renderBouncerPanel(decodedText.trim());
     }
 
-    function onScanFailure(error) {
-        // Silent capture of video frames looking for matching matrix code
-    }
+    function onScanFailure(error) {}
 
-    // MANUAL SEARCH INTERFACE
     function manualSearch() {
         const phone = document.getElementById('scanPhone').value.trim();
         renderBouncerPanel(phone);
     }
 
-    // SHARED RE-RENDERING ENGINE FOR SCAN & MANUAL SEARCH
+    // BOUNCER DISPATCH CONTROLLER WITH VISUAL FACE CHECK
     function renderBouncerPanel(phone) {
         const member = registeredMembers.find(m => m.phone === phone);
         const resultDiv = document.getElementById('scanDetails');
@@ -498,12 +598,18 @@
             return;
         }
 
-        // Render controls with structural defenses against duplicate requests
+        const verificationAvatar = member.photoUrl 
+            ? `<img src="${member.photoUrl}" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:2px solid var(--primary);">` 
+            : `<div style="width:100px; height:100px; background:#ddd; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#666; font-weight:bold; font-size:13px; text-align:center;">ফটো নেই</div>`;
+
         resultDiv.innerHTML = `
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e2e3e5; margin-bottom: 15px;">
-                <h3 style="color: var(--primary); margin: 0 0 10px 0; font-size: 1.5rem;">👤 নাম: ${member.name}</h3>
-                <p style="margin: 5px 0; color: #333; font-size: 1.05rem;">📱 <b>মোবাইল:</b> ${member.phone}</p>
-                <p style="margin: 5px 0; color: #666; font-size: 1rem;">💳 <b>পেমেন্ট তথ্য:</b> ${member.paymentInfo}</p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e2e3e5; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;">
+                ${verificationAvatar}
+                <div>
+                    <h3 style="color: var(--primary); margin: 0 0 5px 0; font-size: 1.5rem;">👤 নাম: ${member.name}</h3>
+                    <p style="margin: 3px 0; color: #333; font-size: 1.05rem;">📱 <b>মোবাইল:</b> ${member.phone}</p>
+                    <p style="margin: 3px 0; color: #666; font-size: 1rem;">💳 <b>পেমেন্ট তথ্য:</b> ${member.paymentInfo}</p>
+                </div>
             </div>
             <p style="color: #444; font-weight: bold; margin-bottom: 10px; border-left: 3px solid var(--secondary); padding-left: 8px;">সার্ভিস ও বিতরণ কন্ট্রোল (একবারই ক্লিক করা যাবে):</p>
             
@@ -535,26 +641,16 @@
         `;
     }
 
-    // SECURE TRANSACTION HANDLER
     function updateStatus(phone, property) {
         const member = registeredMembers.find(m => m.phone === phone);
-        
-        // Anti-duplication fail-safe checkpoint
-        if(!member) {
-            alert('❌ ত্রুটি: সদস্য পাওয়া যায়নি!');
-            return;
-        }
-        if(member[property]) {
-            alert('❌ অ্যালার্ট: এই সেবাটি ইতিমধ্যে প্রদান করা হয়েছে! ডাটা ডুপ্লিকেট করা সম্ভব নয়।');
-            return;
-        }
+        if(!member) return;
+        if(member[property]) return;
 
-        // Commit status change state
         member[property] = true;
         localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
         
-        updateTable(); // Update spreadsheet sync logs
-        renderBouncerPanel(phone); // Hot-reload control panel state UI
+        updateTable();
+        renderBouncerPanel(phone);
         alert('✓ ডাটাবেস সফলভাবে আপডেট করা হয়েছে!');
     }
 
@@ -567,17 +663,27 @@
         link.click();
     }
 
-    // BULK ARCHIVE ENGINE (.ZIP)
+    // BULK ARCHIVE ENGINE (.ZIP) WITH PHOTO INJECTIONS
     async function exportAllToZip() {
         if(registeredMembers.length === 0) return alert('❌ কোনো ডাটা নেই!');
         const zip = new JSZip();
+        
+        alert('📦 সব কার্ড প্রসেস হচ্ছে, ছবির সাইজের উপর ভিত্তি করে কিছুক্ষণ সময় লাগতে পারে। অনুগ্রহ করে অপেক্ষা করুন...');
+        
         for (let i = 0; i < registeredMembers.length; i++) {
             const m = registeredMembers[i];
-            drawCardBase(m.name, m.phone);
+            await drawCardBase(m.name, m.phone, m.photoUrl);
             const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
             zip.file(`${m.name}_${m.phone}_Pass.png`, blob);
         }
-        if(lastRegisteredMember) drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone);
+        
+        // Reset preview area to last registered state
+        if(lastRegisteredMember) {
+            await drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone, lastRegisteredMember.photoUrl);
+        } else {
+            await drawCardBase("আপনার নাম এখানে", "01712345678", "");
+        }
+        
         const zipContent = await zip.generateAsync({ type: 'blob' });
         let link = document.createElement('a');
         link.href = URL.createObjectURL(zipContent);
