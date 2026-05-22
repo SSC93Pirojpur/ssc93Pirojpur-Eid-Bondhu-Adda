@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ঈদ বন্ধু আড্ডা ২০२६ - Gate & Payment Control</title>
-    <!-- Libraries for ZIP, QR Code, and Camera Scanner -->
+    <title>ঈদ বন্ধু আড্ডা ২०२६ - SSC 93 Pirojpur</title>
+    <!-- JSZip for Bulk Downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Google Fonts - Elegant Bengali Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&family=Rozha+One&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -16,72 +18,196 @@
             --dark: #212529;
             --light: #f8f9fa;
             --success: #198754;
+            --gold: #d4af37;
         }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Baloo 2', 'Segoe UI', Arial, sans-serif;
             background-color: var(--light);
             margin: 0;
             padding: 20px;
             color: var(--dark);
         }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         header {
             text-align: center;
             background: linear-gradient(135deg, var(--primary), #146c43);
             color: white;
-            padding: 25px;
+            padding: 30px 20px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
-        h1 { margin: 0; color: var(--secondary); }
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            color: var(--secondary);
+            font-family: 'Rozha One', serif;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            margin: 10px 0 0 0;
+            font-size: 1.3rem;
+            color: #fff;
+            font-weight: 500;
+        }
         
-        /* Navigation Tabs Layout */
+        /* Tab Navigation */
         .tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .tab-btn {
             flex: 1;
-            padding: 12px;
+            min-width: 150px;
+            padding: 12px 15px;
             background: #e2e3e5;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            transition: all 0.3s;
         }
+        .tab-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .tab-btn.active {
             background: var(--primary);
             color: white;
         }
+        
         .view-panel { display: none; }
-        .view-panel.active { display: block; }
+        .view-panel.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-        
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2.2rem; }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--primary);
+        }
+        .card h2 {
+            color: var(--primary);
+            margin-top: 0;
+            font-family: 'Rozha One', serif;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 10px;
+        }
+
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; box-sizing: border-box; }
-        
-        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        button:hover { opacity: 0.9; }
-        
-        canvas { width: 100%; border-radius: 8px; border: 1px solid #ccc; margin-top: 15px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #dee2e6; }
-        th { background-color: var(--primary); color: white; }
-        
-        /* Scanner UI Layout components */
-        #reader { width: 100%; max-width: 450px; margin: 0 auto; background: white; border-radius: 8px; }
-        .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 5px rgba(15, 81, 50, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-family: 'Baloo 2', sans-serif;
+        }
+        button:hover {
+            background-color: #146c43;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(15, 81, 50, 0.3);
+        }
+        button:active { transform: translateY(0); }
+
+        canvas {
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            margin-top: 15px;
+            background: white;
+        }
+
+        .admin-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--primary);
+        }
+
+        .table-wrapper { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        tr:hover { background-color: #f8f9fa; }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-block;
+        }
         .status-pass { background: #d1e7dd; color: #0f5132; }
         .status-fail { background: #f8d7da; color: #842029; }
-        .scan-action-btn { padding: 6px 12px; margin: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; background: white; }
-        .scan-action-btn.taken { background: #198754; color: white; border-color: #198754; }
+        .status-pending { background: #fff3cd; color: #664d03; }
+
+        .btn-download { background-color: #0dcaf0; color: var(--dark); font-weight: bold; }
+        .btn-download:hover { background-color: #0aa2c0; }
+
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
+        .scan-info { font-size: 1.1rem; line-height: 1.8; margin-top: 15px; }
+        .member-photo { width: 100px; height: 120px; border-radius: 6px; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 10px; }
+
+        .empty-state { text-align: center; color: #999; padding: 30px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -89,58 +215,54 @@
 <div class="container">
     <header>
         <h1>ঈদ বন্ধু আড্ডা २०२६</h1>
-        <p style="margin: 5px 0 0 0;">SSC 93 Pirojpur - Access & Souvenir Management</p>
+        <p class="subtitle">SSC 93 Pirojpur - Event Management System</p>
     </header>
 
-    <!-- App View Control Tabs Navigation -->
+    <!-- Navigation Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('reg-view')">Registration</button>
-        <button class="tab-btn" onclick="switchTab('admin-view')">Dashboard</button>
-        <button class="tab-btn" onclick="switchTab('scanner-view')">Gate Scanner Mode</button>
+        <button class="tab-btn active" onclick="switchTab('registration')">📝 নিবন্ধন</button>
+        <button class="tab-btn" onclick="switchTab('dashboard')">📊 ড্যাশবোর্ড</button>
+        <button class="tab-btn" onclick="switchTab('bouncer')">🔐 গেট ম্যানেজমেন্ট</button>
     </div>
 
-    <!-- VIEW 1: REGISTRATION & CARD CREATION -->
-    <div id="reg-view" class="view-panel active">
+    <!-- TAB 1: REGISTRATION -->
+    <div id="registration" class="view-panel active">
         <div class="grid">
             <div class="card">
                 <h2>সদস্য নিবন্ধন ফর্ম</h2>
                 <form id="regForm" onsubmit="registerMember(event)">
                     <div class="form-group">
-                        <label>বন্ধুর নাম (Name):</label>
-                        <input type="text" id="memberName" required placeholder="Ex: ইফফাত হাসান">
+                        <label>বন্ধুর নাম (Full Name):</label>
+                        <input type="text" id="memberName" required placeholder="ইফফাত হাসান">
                     </div>
                     <div class="form-group">
                         <label>মোবাইল নম্বর (Unique Mobile):</label>
-                        <input type="tel" id="memberPhone" required placeholder="017XXXXXXXX">
+                        <input type="tel" id="memberPhone" required placeholder="01712345678">
                     </div>
                     <div class="form-group">
-                        <label>ছবি আপলোড করুন (Upload Photo):</label>
-                        <input type="file" id="memberPhoto" accept="image/*" required>
+                        <label>পেমেন্ট তথ্য (Payment Reference):</label>
+                        <input type="text" id="paymentInfo" required placeholder="Bkash/Nagad ID or Name">
                     </div>
-                    <!-- New Payment Info Field Added Here -->
-                    <div class="form-group">
-                        <label>রেজিঃ ফি পাঠানো বিকাশ/ নগদ নম্বর /বন্ধুর নাম:</label>
-                        <input type="text" id="paymentInfo" required placeholder="Ex: 017XXXXXXXX / রফিক">
-                    </div>
-                    <button type="submit">নিবন্ধন ও কার্ড তৈরি করুন</button>
+                    <button type="submit">নিবন্ধন সম্পন্ন করুন ✓</button>
                 </form>
             </div>
+
             <div class="card" style="text-align: center;">
-                <h2>আপনার ডিজিটাল এন্ট্রি পাস</h2>
+                <h2>আপনার ডিজিটাল পাস</h2>
                 <canvas id="ticketCanvas" width="800" height="450"></canvas>
-                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন</button>
+                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন 📥</button>
             </div>
         </div>
     </div>
 
-    <!-- VIEW 2: ADMIN DASHBOARD -->
-    <div id="admin-view" class="view-panel">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap:10px;">
-                <h2>নিবন্ধিত ডাটাবেস প্যানেল</h2>
-                <button onclick="exportAllToZip()" style="width: auto; background-color: var(--secondary); color: var(--dark);">সব কার্ড ডাউনলোড (.ZIP)</button>
+    <!-- TAB 2: DASHBOARD -->
+    <div id="dashboard" class="view-panel">
+        <div class="admin-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                <h2 style="margin: 0;">নিবন্ধিত সদস্যদের তালিকা</h2>
+                <button onclick="exportAllToZip()" style="width: auto; background-color: var(--secondary); color: var(--dark);">সব কার্ড ডাউনলোড 📦</button>
             </div>
-            <div style="overflow-x:auto;">
+            <div class="table-wrapper">
                 <table id="membersTable">
                     <thead>
                         <tr>
@@ -148,9 +270,9 @@
                             <th>মোবাইল</th>
                             <th>পেমেন্ট তথ্য</th>
                             <th>প্রবেশ</th>
-                            <th>খাবার (Meal)</th>
-                            <th>নাস্তা (Snack)</th>
-                            <th>স্মারক (Souvenir)</th>
+                            <th>খাবার</th>
+                            <th>নাস্তা</th>
+                            <th>স্মারক</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -159,17 +281,20 @@
         </div>
     </div>
 
-    <!-- VIEW 3: LIVE BOUNCER & SOUVENIR SCANNER -->
-    <div id="scanner-view" class="view-panel">
+    <!-- TAB 3: BOUNCER/GATE MANAGEMENT -->
+    <div id="bouncer" class="view-panel">
         <div class="grid">
             <div class="card" style="text-align: center;">
-                <h2>গেট ভেরিফিকেশন ক্যামেরা</h2>
-                <div id="reader"></div>
+                <h2>কিউআর কোড স্ক্যানার</h2>
+                <p style="color: #666; margin-bottom: 15px;">মোবাইল নম্বর দিয়ে অনুসন্ধান করুন</p>
+                <input type="tel" id="scanPhone" placeholder="01712345678" style="margin-bottom: 10px;">
+                <button onclick="manualSearch()">অনুসন্ধান করুন 🔍</button>
             </div>
-            <div class="card" id="scanResultCard">
-                <h2>স্ক্যান ফলাফল (Scanner Output)</h2>
-                <div id="scanDetails" style="font-size:1.1rem; line-height:1.8;">
-                    <p style="color:#6c757d;">অনুগ্রহ করে একটি প্রবেশপত্রের কিউআর কোড ক্যামেরার সামনে রাখুন।</p>
+
+            <div class="card">
+                <h2>সদস্য তথ্য</h2>
+                <div id="scanDetails" class="scan-info" style="color: #999;">
+                    অনুসন্ধান করার পর সদস্যের তথ্য এখানে প্রদর্শিত হবে
                 </div>
             </div>
         </div>
@@ -177,220 +302,220 @@
 </div>
 
 <script>
-    let registeredMembers = JSON.parse(localStorage.getItem('ssc93_gate_db')) || [];
+    let registeredMembers = JSON.parse(localStorage.getItem('ssc93_event_db')) || [];
     const canvas = document.getElementById('ticketCanvas');
     const ctx = canvas.getContext('2d');
     let lastRegisteredMember = null;
-    let html5QrcodeScanner = null;
 
-    window.onload = () => { 
-        console.log("Loaded members:", registeredMembers);
-        updateTable(); 
-        drawCardBase("বন্ধুর নাম এখানে", "017XXXXXXXX"); 
+    window.onload = () => {
+        console.log("Total members loaded:", registeredMembers.length);
+        updateTable();
+        drawCardBase("আপনার নাম এখানে", "01712345678");
     };
 
-    // Handle application tab layout toggles
-    function switchTab(viewId) {
+    // TAB SWITCHING
+    function switchTab(tabName) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
+        document.getElementById(tabName).classList.add('active');
         event.target.classList.add('active');
-
-        if(viewId === 'scanner-view') {
-            startScanner();
-        } else if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear();
-        }
     }
 
-    // High-fidelity card layout design engine
-    function drawCardBase(name, phone, photoSrc = null) {
-        return new Promise((resolve) => {
-            ctx.fillStyle = "#0f5132";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "#ffc107";
-            ctx.lineWidth = 10;
-            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    // DRAW ELEGANT CARD WITH BENGALI TEXT
+    function drawCardBase(name, phone) {
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#0f5132');
+        gradient.addColorStop(1, '#146c43');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = "#ffc107";
-            ctx.font = "bold 38px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("ঈদ বন্ধু আড্ডা २०२६", canvas.width / 2 + 50, 85);
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "20px Arial";
-            ctx.fillText("SSC 93 Pirojpur Reunion Pass", canvas.width / 2 + 50, 125);
+        // Gold decorative border
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
 
-            ctx.textAlign = "left";
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 32px Arial";
-            ctx.fillText(name, 260, 220);
-            ctx.font = "20px Arial";
-            ctx.fillStyle = "#b6effb";
-            ctx.fillText("মোবাইল: " + phone, 260, 265);
+        // Inner decorative line
+        ctx.strokeStyle = '#ffc107';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
 
-            ctx.fillStyle = "rgba(255,255,255,0.6)";
-            ctx.font = "italic 16px Arial";
-            ctx.fillText("নিরাপত্তা ভেরিফিকেশনের জন্য গেটে এই কিউআর প্রদর্শন করুন।", 260, 390);
+        // Main Title - Elegant Bengali
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 48px "Rozha One", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ঈদ বন্ধু আড্ডা २०२६', canvas.width / 2, 100);
 
-            let loadedCount = 0;
-            const targetLoads = (photoSrc ? 1 : 0) + 1;
+        // Subtitle
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px "Baloo 2", sans-serif';
+        ctx.fillText('SSC 93 Pirojpur Reunion', canvas.width / 2, 145);
 
-            function checkDone() {
-                loadedCount++;
-                if(loadedCount === targetLoads) resolve();
-            }
+        // Decorative line
+        ctx.strokeStyle = '#ffc107';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(150, 165);
+        ctx.lineTo(canvas.width - 150, 165);
+        ctx.stroke();
 
-            const qr = new QRious({ value: phone, size: 150 });
-            const qrImg = new Image();
-            qrImg.src = qr.toDataURL();
-            qrImg.onload = () => {
-                ctx.drawImage(qrImg, 610, 160, 150, 150);
-                checkDone();
-            };
+        // Member Name
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 42px "Baloo 2", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(name, canvas.width / 2, 270);
 
-            if(photoSrc) {
-                const profileImg = new Image();
-                profileImg.src = photoSrc;
-                profileImg.onload = () => {
-                    ctx.drawImage(profileImg, 50, 140, 170, 210);
-                    ctx.strokeStyle = "#ffffff";
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(50, 140, 170, 210);
-                    checkDone();
-                };
-            } else {
-                ctx.fillStyle = "#146c43";
-                ctx.fillRect(50, 140, 170, 210);
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "16px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("No Photo", 135, 250);
-                checkDone();
-            }
-        });
+        // Mobile Number
+        ctx.fillStyle = '#b6effb';
+        ctx.font = '20px "Baloo 2", sans-serif';
+        ctx.fillText('মোবাইল: ' + phone, canvas.width / 2, 320);
+
+        // QR Code
+        const qr = new QRious({ value: phone, size: 140 });
+        const qrImg = new Image();
+        qrImg.src = qr.toDataURL();
+        qrImg.onload = () => {
+            ctx.drawImage(qrImg, canvas.width - 170, 240, 150, 150);
+            ctx.strokeStyle = '#ffc107';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(canvas.width - 170, 240, 150, 150);
+        };
+
+        // Footer text
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'italic 16px "Baloo 2", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('গেটে কিউআর কোড প্রদর্শন করুন', canvas.width / 2, 405);
     }
 
-    // Process Form Submissions
+    // REGISTER MEMBER
     function registerMember(event) {
         event.preventDefault();
-        const name = document.getElementById('memberName').value;
+        const name = document.getElementById('memberName').value.trim();
         const phone = document.getElementById('memberPhone').value.trim();
-        const photoFile = document.getElementById('memberPhoto').files[0];
-        const paymentInfo = document.getElementById('paymentInfo').value;
+        const paymentInfo = document.getElementById('paymentInfo').value.trim();
 
         if(registeredMembers.some(m => m.phone === phone)) {
-            alert("এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে নিবন্ধন করা হয়েছে!");
+            alert('❌ এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত!');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const photoDataUrl = e.target.result;
-            const newMember = { 
-                name, phone, photo: photoDataUrl, paymentInfo,
-                checkedIn: false, meal: false, snack: false, souvenir: false 
-            };
-
-            registeredMembers.push(newMember);
-            lastRegisteredMember = newMember;
-            localStorage.setItem('ssc93_gate_db', JSON.stringify(registeredMembers));
-            
-            console.log("New member added:", newMember);
-            console.log("Total members:", registeredMembers);
-
-            await drawCardBase(name, phone, photoDataUrl);
-            document.getElementById('downloadSingleBtn').style.display = "block";
-            updateTable();
-            document.getElementById('regForm').reset();
-            alert("নিবন্ধন সফল হয়েছে!");
+        const newMember = {
+            name, phone, paymentInfo,
+            checkedIn: false, mealServed: false, snackServed: false, souvenirGiven: false
         };
-        reader.readAsDataURL(photoFile);
+
+        registeredMembers.push(newMember);
+        lastRegisteredMember = newMember;
+        localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
+
+        console.log('✓ New member registered:', newMember);
+        drawCardBase(name, phone);
+        document.getElementById('downloadSingleBtn').style.display = 'block';
+        updateTable();
+        document.getElementById('regForm').reset();
+        alert('✓ নিবন্ধন সফল হয়েছে!');
     }
 
+    // UPDATE TABLE WITH STATUS INDICATORS
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
-        
+
         if(registeredMembers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="color:#999; text-align:center;">এখনো কোনো নিবন্ধন নেই</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">কোনো নিবন্ধন নেই</td></tr>';
             return;
         }
-        
+
         registeredMembers.forEach(m => {
             tbody.innerHTML += `<tr>
                 <td><b>${m.name}</b></td>
                 <td>${m.phone}</td>
-                <td><span style="background:#fff3cd; color:#664d03; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${m.paymentInfo || 'N/A'}</span></td>
-                <td><span class="status-badge ${m.checkedIn?'status-pass':'status-fail'}">${m.checkedIn?'ভিতরে':'অনুপস্থিত'}</span></td>
-                <td><span class="status-badge ${m.meal?'status-pass':'status-fail'}">${m.meal?'গৃহীত':'বাকি'}</span></td>
-                <td><span class="status-badge ${m.snack?'status-pass':'status-fail'}">${m.snack?'গৃহীত':'বাকি'}</span></td>
-                <td><span class="status-badge ${m.souvenir?'status-pass':'status-fail'}">${m.souvenir?'গৃহীত':'বাকি'}</span></td>
+                <td><span style="background:#fff3cd; color:#664d03; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${m.paymentInfo}</span></td>
+                <td><span class="status-badge ${m.checkedIn ? 'status-pass' : 'status-fail'}">${m.checkedIn ? '✓ প্রবেশ' : '✗ বাকি'}</span></td>
+                <td><span class="status-badge ${m.mealServed ? 'status-pass' : 'status-fail'}">${m.mealServed ? '✓ সম্পন্ন' : '✗ বাকি'}</span></td>
+                <td><span class="status-badge ${m.snackServed ? 'status-pass' : 'status-fail'}">${m.snackServed ? '✓ সম্পন্ন' : '✗ বাকি'}</span></td>
+                <td><span class="status-badge ${m.souvenirGiven ? 'status-pass' : 'status-fail'}">${m.souvenirGiven ? '✓ সম্পন্ন' : '✗ বাকি'}</span></td>
             </tr>`;
         });
     }
 
+    // MANUAL SEARCH & BOUNCER INTERFACE
+    function manualSearch() {
+        const phone = document.getElementById('scanPhone').value.trim();
+        const member = registeredMembers.find(m => m.phone === phone);
+        const resultDiv = document.getElementById('scanDetails');
+
+        if(!member) {
+            resultDiv.innerHTML = '<p style="color:red; font-weight:bold; font-size:1.2rem;">❌ সদস্য খুঁজে পাওয়া যায়নি!</p>';
+            return;
+        }
+
+        // Display member info with ONE-TIME action buttons
+        resultDiv.innerHTML = `
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin: 0 0 10px 0;">${member.name}</h3>
+                <p style="margin: 5px 0; color: #666;">📱 ${member.phone}</p>
+                <p style="margin: 5px 0; color: #666;">💳 ${member.paymentInfo}</p>
+            </div>
+            <hr style="border: 1px dashed #ccc; margin: 15px 0;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 15px;">
+                <button onclick="updateStatus('${phone}', 'checkedIn')" style="background: ${member.checkedIn ? '#666' : '#198754'}; ${member.checkedIn ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.checkedIn ? 'disabled' : ''}>
+                    ${member.checkedIn ? '✓ প্রবেশ সম্পন্ন' : '🚪 প্রবেশ অনুমোদন করুন'}
+                </button>
+                <button onclick="updateStatus('${phone}', 'mealServed')" style="background: ${member.mealServed ? '#666' : '#0dcaf0'}; color: ${member.mealServed ? 'white' : 'black'}; ${member.mealServed ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.mealServed ? 'disabled' : ''}>
+                    ${member.mealServed ? '✓ খাবার প্রদান সম্পন্ন' : '🍽️ খাবার প্রদান করুন'}
+                </button>
+                <button onclick="updateStatus('${phone}', 'snackServed')" style="background: ${member.snackServed ? '#666' : '#ffc107'}; color: ${member.snackServed ? 'white' : 'black'}; ${member.snackServed ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.snackServed ? 'disabled' : ''}>
+                    ${member.snackServed ? '✓ নাস্তা প্রদান সম্পন্ন' : '🥤 নাস���তা প্রদান করুন'}
+                </button>
+                <button onclick="updateStatus('${phone}', 'souvenirGiven')" style="background: ${member.souvenirGiven ? '#666' : '#e83e8c'}; color: white; ${member.souvenirGiven ? 'cursor: not-allowed; opacity: 0.6;' : ''}" ${member.souvenirGiven ? 'disabled' : ''}>
+                    ${member.souvenirGiven ? '✓ স্মারক প্রদান সম্পন্ন' : '🎁 স্মারক প্রদান করুন'}
+                </button>
+            </div>
+        `;
+    }
+
+    // UPDATE STATUS - ONE TIME ONLY
+    function updateStatus(phone, property) {
+        const member = registeredMembers.find(m => m.phone === phone);
+        if(!member || member[property]) {
+            alert('❌ এই সেবা ইতিমধ্যে প্রদান করা হয়েছে!');
+            return;
+        }
+
+        member[property] = true;
+        localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
+        updateTable();
+        manualSearch(); // Refresh bouncer view
+        alert('✓ আপডেট সফল!');
+    }
+
+    // DOWNLOAD CARD
     function downloadSingleCard() {
         if (!lastRegisteredMember) return;
         let link = document.createElement('a');
-        link.download = `${lastRegisteredMember.name}_Pass.png`;
+        link.download = `${lastRegisteredMember.name}_Pass_2026.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     }
 
+    // BULK DOWNLOAD ZIP
     async function exportAllToZip() {
-        if(registeredMembers.length === 0) return alert("কোনো ডাটা নেই!");
+        if(registeredMembers.length === 0) return alert('❌ কোনো ডাটা নেই!');
         const zip = new JSZip();
         for (let i = 0; i < registeredMembers.length; i++) {
             const m = registeredMembers[i];
-            await drawCardBase(m.name, m.phone, m.photo);
+            drawCardBase(m.name, m.phone);
             const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            zip.file(`${m.name}_${m.phone}_Card.png`, blob);
+            zip.file(`${m.name}_${m.phone}_Pass.png`, blob);
         }
-        if(lastRegisteredMember) await drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone, lastRegisteredMember.photo);
-        const zipContent = await zip.generateAsync({ type: "blob" });
+        if(lastRegisteredMember) drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone);
+        const zipContent = await zip.generateAsync({ type: 'blob' });
         let link = document.createElement('a');
         link.href = URL.createObjectURL(zipContent);
-        link.download = "Eid_Bondhu_Adda_2026_All_Passes.zip";
+        link.download = 'Eid_Bondhu_Adda_2026_All_Passes.zip';
         link.click();
-    }
-
-    // ================= SCANNER LOGIC SYSTEM =================
-    function startScanner() {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
-    }
-
-    function onScanSuccess(decodedText) {
-        const member = registeredMembers.find(m => m.phone === decodedText.trim());
-        const resultDiv = document.getElementById('scanDetails');
-
-        if(member) {
-            resultDiv.innerHTML = `
-                <div style="text-align:center; margin-bottom:15px;">
-                    <img src="${member.photo}" style="width:120px; height:140px; border-radius:6px; object-fit:cover; border:3px solid var(--primary);">
-                </div>
-                <b>নাম:</b> ${member.name}<br>
-                <b>মোবাইল:</b> ${member.phone}<br>
-                <b>রেজিঃ ফি পেমেন্ট তথ্য:</b> <span style="color:#664d03; background:#fff3cd; padding:2px 6px; border-radius:4px;">${member.paymentInfo || 'N/A'}</span>
-                <hr style="border:1px dashed #ccc;"><br>
-                <button class="scan-action-btn ${member.checkedIn?'taken':''}" onclick="toggleStatus('${member.phone}', 'checkedIn')">🏢 Gate Entry: ${member.checkedIn?'Checked In':'Mark Attendance'}</button>
-                <button class="scan-action-btn ${member.meal?'taken':''}" onclick="toggleStatus('${member.phone}', 'meal')">🍽️ Lunch/Meal: ${member.meal?'Served':'Mark Served'}</button>
-                <button class="scan-action-btn ${member.snack?'taken':''}" onclick="toggleStatus('${member.phone}', 'snack')">🍿 Snacks: ${member.snack?'Served':'Mark Served'}</button>
-                <button class="scan-action-btn ${member.souvenir?'taken':''}" onclick="toggleStatus('${member.phone}', 'souvenir')">🎁 Souvenir: ${member.souvenir?'Distributed':'Mark Distributed'}</button>
-            `;
-        } else {
-            resultDiv.innerHTML = `<p style="color:red; font-weight:bold; font-size:1.3rem;">❌ অবৈধ কার্ড! (Invalid Ticket Provided)</p>`;
-        }
-    }
-
-    function toggleStatus(phone, property) {
-        const member = registeredMembers.find(m => m.phone === phone);
-        if(member) {
-            member[property] = !member[property];
-            localStorage.setItem('ssc93_gate_db', JSON.stringify(registeredMembers));
-            updateTable();
-            onScanSuccess(phone);
-        }
     }
 </script>
 </body>
