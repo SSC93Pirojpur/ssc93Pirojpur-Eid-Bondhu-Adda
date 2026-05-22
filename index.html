@@ -101,7 +101,7 @@
 
 <div class="container">
     <header>
-        <h1>ঈদ বন্ধু আড্ডা ২০২৬</h1>
+        <h1>ঈদ বন্ধু আড্ডা ২০२६</h1>
         <p style="margin: 5px 0 0 0; font-size: 1.2rem;">SSC 93 Pirojpur Reunion Platform</p>
     </header>
 
@@ -188,7 +188,7 @@
         ctx.fillStyle = "#ffc107";
         ctx.font = "bold 42px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("ঈদ বন্ধু আড্ডা ২০২৬", canvas.width / 2, 90);
+        ctx.fillText("ঈদ বন্ধু আড্ডা २०२६", canvas.width / 2, 90);
 
         ctx.fillStyle = "#ffffff";
         ctx.font = "24px Arial";
@@ -206,13 +206,13 @@
         if(phone) {
             ctx.font = "20px Arial";
             ctx.fillStyle = "#b6effb";
-            ctx.fillText("মোবail: " + phone, canvas.width / 2, 300);
+            ctx.fillText("Mobile: " + phone, canvas.width / 2, 300);
         }
 
         // Footnote Entry Pass verification text
         ctx.fillStyle = "rgba(255,255,255,0.7)";
         ctx.font = "italic 18px Arial";
-        ctx.fillText("এই কার্ডটি অনুষ্ঠানস্থলে প্রবেশের জন্য প্রদর্শন করুন", canvas.width / 2, 390);
+        ctx.fillText("Please show this card at the event venue for entry", canvas.width / 2, 390);
     }
 
     // Process new user registration submission
@@ -266,7 +266,7 @@
     // Bulk automation packaging processor zip output logic
     async function exportAllToZip() {
         if(registeredMembers.length === 0) {
-            alert("ডাউনলোড করার মত কোনো নিবন্ধিত সদস্য এখনো নেই!");
+            alert("No registered members to download yet!");
             return;
         }
         
