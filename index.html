@@ -261,7 +261,7 @@
                     </div>
                     <div class="form-group">
                         <label>বন্ধুর ছবি (Upload Photo):</label>
-                        <input type="file" id="memberPhoto" accept="image/*">
+                        <input type="file" id="memberPhotoInput" accept="image/*">
                     </div>
                     <button type="submit">নিবন্ধন সম্পন্ন করুন ✓</button>
                 </form>
@@ -325,12 +325,20 @@
 </div>
 
 <script>
-    let registeredMembers = JSON.parse(localStorage.getItem('ssc93_event_db')) || [];
+    // Safe database loader to prevent corruption crashes
+    let registeredMembers = [];
+    try {
+        registeredMembers = JSON.parse(localStorage.getItem('ssc93_event_db')) || [];
+    } catch (e) {
+        console.error("Database recovery initialized", e);
+        registeredMembers = [];
+    }
+
     const canvas = document.getElementById('ticketCanvas');
     const ctx = canvas.getContext('2d');
     let lastRegisteredMember = null;
     let html5QrcodeScanner = null;
-    let currentScannedPhone = ""; // Holds active scan to block UI flickering loops
+    let currentScannedPhone = "";
 
     window.onload = async () => {
         console.log("Total members loaded:", registeredMembers.length);
@@ -338,7 +346,7 @@
         await drawCardBase("আপনার নাম এখানে", "01712345678", "");
     };
 
-    // TAB SWITCHING MANAGEMENT WITH SCANNER CLEANUP CLEANROOM
+    // TAB SWITCHING MANAGEMENT WITH SCANNER CLEANUP
     function switchTab(event, tabName) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -444,7 +452,7 @@
         ctx.fillText('ফটো যুক্ত নেই', 125, 290);
     }
 
-    // IMAGE COMPRESSOR
+    // HIGHLY OPTIMIZED IMAGE COMPRESSOR FOR LOCALSTORAGE CAPACITY SAVING
     function compressImageFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -453,7 +461,7 @@
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    const maxCoord = 300;
+                    const maxCoord = 150; // Optimized to perfectly match card requirements
                     let width = img.width;
                     let height = img.height;
 
@@ -474,7 +482,7 @@
                     tempCanvas.height = height;
                     const tempCtx = tempCanvas.getContext('2d');
                     tempCtx.drawImage(img, 0, 0, width, height);
-                    resolve(tempCanvas.toDataURL('image/jpeg', 0.75));
+                    resolve(tempCanvas.toDataURL('image/jpeg', 0.60)); // Maximum payload compression optimization
                 };
             };
             reader.onerror = (err) => reject(err);
@@ -487,7 +495,7 @@
         const name = document.getElementById('memberName').value.trim();
         const phone = document.getElementById('memberPhone').value.trim();
         const paymentInfo = document.getElementById('paymentInfo').value.trim();
-        const photoFileInput = document.getElementById('memberPhoto').files[0];
+        const photoFileInput = document.getElementById('memberPhotoInput').files[0];
 
         if(registeredMembers.some(m => m.phone === phone)) {
             alert('❌ এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত!');
@@ -514,15 +522,16 @@
 
         try {
             localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
+            await drawCardBase(name, phone, compressedPhotoBase64);
+            document.getElementById('downloadSingleBtn').style.display = 'block';
+            updateTable();
+            document.getElementById('regForm').reset();
+            alert('✓ ' + name + ' এর ছবিসহ নিবন্ধন সফল হয়েছে!');
         } catch (e) {
-            alert('⚠ ডাটাবেস মেমোরি পূর্ণ সতর্কবার্তা! অনুগ্রহ করে ছোট সাইজের ছবি ব্যবহার করুন।');
+            // Remove the unsaved member from active runtime memory to keep sync intact
+            registeredMembers.pop();
+            alert('❌ ডাটাবেস মেমোরি পূর্ণ! আপলোড করা ছবিটির সাইজ অনেক বড় অথবা স্টোরেজ লিমিট শেষ। অনুগ্রহ করে অন্য বা ছোট সাইজের ছবি ব্যবহার করুন।');
         }
-
-        await drawCardBase(name, phone, compressedPhotoBase64);
-        document.getElementById('downloadSingleBtn').style.display = 'block';
-        updateTable();
-        document.getElementById('regForm').reset();
-        alert('✓ ' + name + ' এর ছবিসহ নিবন্ধন সফল হয়েছে!');
     }
 
     // DASHBOARD DATABASE TABLE REFRESH
@@ -553,9 +562,8 @@
         });
     }
 
-    // BULKPROOF LIFECYCLE QR SCANNER HANDLERS
+    // QR SCANNER LIFECYCLE MANAGEMENT
     function startQRScanner() {
-        // Clean out any remnants or raw DOM mutations left behind by previous hooks
         const container = document.getElementById('reader');
         if (container) container.innerHTML = "";
 
@@ -563,12 +571,11 @@
             try {
                 html5QrcodeScanner.clear();
             } catch (e) {
-                console.log("Scanner reset adjustment non-critical catch");
+                console.log("Scanner engine restart bypass");
             }
             html5QrcodeScanner = null;
         }
 
-        // Initialize a clean instance setup
         html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
             fps: 10, 
             qrbox: { width: 250, height: 250 },
@@ -582,9 +589,9 @@
         if (html5QrcodeScanner) {
             html5QrcodeScanner.clear().then(() => {
                 html5QrcodeScanner = null;
-                currentScannedPhone = ""; // Reset scan memory on close
+                currentScannedPhone = "";
             }).catch(err => {
-                console.error("Scanner engine closure fallback:", err);
+                console.error("Scanner tracking cleanup redirection:", err);
                 html5QrcodeScanner = null;
                 currentScannedPhone = "";
             });
@@ -593,11 +600,7 @@
 
     function onScanSuccess(decodedText) {
         const cleanedText = decodedText.trim();
-        
-        // Prevent interface rendering loop if holding the exact same card under camera
-        if (cleanedText === currentScannedPhone) {
-            return;
-        }
+        if (cleanedText === currentScannedPhone) return;
         
         currentScannedPhone = cleanedText;
         document.getElementById('scanPhone').value = cleanedText;
@@ -605,12 +608,12 @@
     }
 
     function onScanFailure(error) {
-        // Soft loop monitoring frames silently
+        // Frame engine tracking bypass
     }
 
     function manualSearch() {
         const phone = document.getElementById('scanPhone').value.trim();
-        currentScannedPhone = phone; // Override matching memory pool
+        currentScannedPhone = phone;
         renderBouncerPanel(phone);
     }
 
@@ -669,15 +672,18 @@
 
     function updateStatus(phone, property) {
         const member = registeredMembers.find(m => m.phone === phone);
-        if(!member) return;
-        if(member[property]) return;
+        if(!member || member[property]) return;
 
         member[property] = true;
-        localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
-        
-        updateTable();
-        renderBouncerPanel(phone);
-        alert('✓ ডাটাবেস সফলভাবে আপডেট করা হয়েছে!');
+        try {
+            localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
+            updateTable();
+            renderBouncerPanel(phone);
+            alert('✓ ডাটাবেস সফলভাবে আপডেট করা হয়েছে!');
+        } catch (e) {
+            member[property] = false; // Rollback
+            alert('❌ স্টোরেজ ফুল হওয়ার কারণে আপডেট সেভ করা যায়নি!');
+        }
     }
 
     // DOWNLOAD INDIVIDUAL CARD
