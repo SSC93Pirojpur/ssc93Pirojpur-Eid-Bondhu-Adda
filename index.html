@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ঈদ বন্ধু আড্ডা ২০২৬ - Gate Control System</title>
+    <title>ঈদ বন্ধু আড্ডা ২০২৬ - Gate & Souvenir Control</title>
     <!-- Libraries for ZIP, QR Code, and Camera Scanner -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -80,8 +80,8 @@
         .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
         .status-pass { background: #d1e7dd; color: #0f5132; }
         .status-fail { background: #f8d7da; color: #842029; }
-        .scan-action-btn { padding: 6px 12px; margin: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .taken { background: #198754; color: white; border-color: #198754; }
+        .scan-action-btn { padding: 6px 12px; margin: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; background: #f8f9fa; color: #212529;}
+        .scan-action-btn.taken { background: #198754; color: white; border-color: #198754; }
     </style>
 </head>
 <body>
@@ -89,7 +89,7 @@
 <div class="container">
     <header>
         <h1>ঈদ বন্ধু আড্ডা ২০২৬</h1>
-        <p style="margin: 5px 0 0 0;">SSC 93 Pirojpur - Access & Management Portal</p>
+        <p style="margin: 5px 0 0 0;">SSC 93 Pirojpur - Access & Souvenir Management</p>
     </header>
 
     <!-- App View Control Tabs Navigation -->
@@ -112,15 +112,6 @@
                     <div class="form-group">
                         <label>মোবাইল নম্বর (Unique Mobile):</label>
                         <input type="tel" id="memberPhone" required placeholder="017XXXXXXXX">
-                    </div>
-                    <div class="form-group">
-                        <label>টি-শার্ট সাইজ (T-Shirt Size):</label>
-                        <select id="tshirtSize">
-                            <option value="M">M</option>
-                            <option value="L">L</option>
-                            <option value="XL">XL</option>
-                            <option value="XXL">XXL</option>
-                        </select>
                     </div>
                     <div class="form-group">
                         <label>ছবি আপলোড করুন (Upload Photo):</label>
@@ -150,10 +141,10 @@
                         <tr>
                             <th>নাম</th>
                             <th>মোবাইল</th>
-                            <th>টি-শার্ট</th>
                             <th>প্রবেশ</th>
                             <th>খাবার (Meal)</th>
                             <th>নাস্তা (Snack)</th>
+                            <th>স্মারক (Souvenir)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -162,7 +153,7 @@
         </div>
     </div>
 
-    <!-- VIEW 3: LIVE BOUNCER & CATERING SCANNER -->
+    <!-- VIEW 3: LIVE BOUNCER & SOUVENIR SCANNER -->
     <div id="scanner-view" class="view-panel">
         <div class="grid">
             <div class="card" style="text-align: center;">
@@ -270,6 +261,7 @@
                 ctx.font = "16px Arial";
                 ctx.textAlign = "center";
                 ctx.fillText("No Photo", 135, 250);
+                checkDone();
             }
         });
     }
@@ -279,7 +271,6 @@
         event.preventDefault();
         const name = document.getElementById('memberName').value;
         const phone = document.getElementById('memberPhone').value.trim();
-        const size = document.getElementById('tshirtSize').value;
         const photoFile = document.getElementById('memberPhoto').files[0];
 
         // Check for duplicate profiles
@@ -292,8 +283,8 @@
         reader.onload = async function(e) {
             const photoDataUrl = e.target.result;
             const newMember = { 
-                name, phone, size, photo: photoDataUrl,
-                checkedIn: false, meal: false, snack: false 
+                name, phone, photo: photoDataUrl,
+                checkedIn: false, meal: false, snack: false, souvenir: false 
             };
 
             registeredMembers.push(newMember);
@@ -315,10 +306,10 @@
             tbody.innerHTML += `<tr>
                 <td><b>${m.name}</b></td>
                 <td>${m.phone}</td>
-                <td>${m.size}</td>
                 <td><span class="status-badge ${m.checkedIn?'status-pass':'status-fail'}">${m.checkedIn?'ভিতরে':'অনুপস্থিত'}</span></td>
                 <td><span class="status-badge ${m.meal?'status-pass':'status-fail'}">${m.meal?'গৃহীত':'বাকি'}</span></td>
                 <td><span class="status-badge ${m.snack?'status-pass':'status-fail'}">${m.snack?'গৃহীত':'বাকি'}</span></td>
+                <td><span class="status-badge ${m.souvenir?'status-pass':'status-fail'}">${m.souvenir?'গৃহীত':'বাকি'}</span></td>
             </tr>`;
         });
     }
@@ -356,7 +347,6 @@
     }
 
     function onScanSuccess(decodedText) {
-        // Search user match against system database
         const member = registeredMembers.find(m => m.phone === decodedText.trim());
         const resultDiv = document.getElementById('scanDetails');
 
@@ -366,12 +356,12 @@
                     <img src="${member.photo}" style="width:120px; height:140px; border-radius:6px; object-fit:cover; border:3px solid var(--primary);">
                 </div>
                 <b>নাম:</b> ${member.name}<br>
-                <b>মোবাইল:</b> ${member.phone}<br>
-                <b>টি-শার্ট সাইজ:</b> ${member.size}<br><br>
+                <b>মোবাইল:</b> ${member.phone}<br><br>
                 <hr style="border:1px dashed #ccc;"><br>
                 <button class="scan-action-btn ${member.checkedIn?'taken':''}" onclick="toggleStatus('${member.phone}', 'checkedIn')">🏢 Gate Entry: ${member.checkedIn?'Checked In':'Mark Attendance'}</button>
                 <button class="scan-action-btn ${member.meal?'taken':''}" onclick="toggleStatus('${member.phone}', 'meal')">🍽️ Lunch/Meal: ${member.meal?'Served':'Mark Served'}</button>
                 <button class="scan-action-btn ${member.snack?'taken':''}" onclick="toggleStatus('${member.phone}', 'snack')">🍿 Snacks: ${member.snack?'Served':'Mark Served'}</button>
+                <button class="scan-action-btn ${member.souvenir?'taken':''}" onclick="toggleStatus('${member.phone}', 'souvenir')">🎁 Souvenir: ${member.souvenir?'Distributed':'Mark Distributed'}</button>
             `;
         } else {
             resultDiv.innerHTML = `<p style="color:red; font-weight:bold; font-size:1.3rem;">❌ অবৈধ কার্ড! (Invalid Ticket Provided)</p>`;
@@ -384,7 +374,7 @@
             member[property] = !member[property];
             localStorage.setItem('ssc93_gate_db', JSON.stringify(registeredMembers));
             updateTable();
-            onScanSuccess(phone); // Refresh the scanner details block
+            onScanSuccess(phone); // Refresh screen view data instantly
         }
     }
 </script>
