@@ -320,7 +320,7 @@
     // ==========================================
     // ⚠️ আপনার গুগল অ্যাপস স্ক্রিপ্ট লিংকটি এখানে দিন
     // ==========================================
-    const SCRIPT_URL = https://script.google.com/macros/s/AKfycbzFkkmRC_96grAoQvhegvSYwQj6GnJVvUJk4PxdNAfV/dev;
+    const SCRIPT_URL ="https://script.google.com/macros/s/AKfycbzFkkmRC_96grAoQvhegvSYwQj6GnJVvUJk4PxdNAfV/dev";
 
     let registeredMembers = [];
     const canvas = document.getElementById('ticketCanvas');
@@ -654,3 +654,15 @@
 </script>
 </body>
 </html>
+
+async function stopQRScanner() {
+    if (html5QrcodeScanner) {
+        try {
+            await html5QrcodeScanner.clear();
+            html5QrcodeScanner = null;
+        } catch (err) {
+            console.error("ক্যামেরা বন্ধ করতে সমস্যা হয়েছে:", err);
+        }
+    }
+    currentScannedPhone = "";
+}
