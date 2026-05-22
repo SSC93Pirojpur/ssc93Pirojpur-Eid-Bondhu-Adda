@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -57,6 +57,30 @@
             color: #fff;
             font-weight: 500;
         }
+        
+        /* Loading Overlay Style */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.85);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* Tab Navigation */
         .tabs {
@@ -228,10 +252,15 @@
 </head>
 <body>
 
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText">ক্লাউড ডাটাবেস লোড হচ্ছে...</div>
+</div>
+
 <div class="container">
     <header>
         <h1>ঈদ বন্ধু আড্ডা ২০২৬</h1>
-        <p class="subtitle">SSC 93 Pirojpur - Event Management System</p>
+        <p class="subtitle">SSC 93 Pirojpur - Event Cloud Management System</p>
     </header>
 
     <!-- Navigation Tabs -->
@@ -245,7 +274,7 @@
     <div id="registration" class="view-panel active">
         <div class="grid">
             <div class="card">
-                <h2>সদস্য নিবন্ধন ফর্ম</h2>
+                <h2>সদস্য নিবন্ধন ফর্ম (Cloud Storage)</h2>
                 <form id="regForm" onsubmit="registerMember(event)">
                     <div class="form-group">
                         <label>বন্ধুর নাম (Full Name):</label>
@@ -280,7 +309,10 @@
         <div class="admin-section">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
                 <h2 style="margin: 0;">নিবন্ধিত সদস্যদের তালিকা</h2>
-                <button onclick="exportAllToZip()" style="width: auto; background-color: var(--secondary); color: var(--dark);">সব কার্ড ডাউনলোড 📦</button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="fetchCloudData()" style="width: auto; background-color: var(--success);">🔄 ডাটা রিফ্রেশ</button>
+                    <button onclick="exportAllToZip()" style="width: auto; background-color: var(--secondary); color: var(--dark);">সব কার্ড ডাউনলোড 📦</button>
+                </div>
             </div>
             <div class="table-wrapper">
                 <table id="membersTable">
@@ -325,15 +357,12 @@
 </div>
 
 <script>
-    // Safe database loader to prevent corruption crashes
-    let registeredMembers = [];
-    try {
-        registeredMembers = JSON.parse(localStorage.getItem('ssc93_event_db')) || [];
-    } catch (e) {
-        console.error("Database recovery initialized", e);
-        registeredMembers = [];
-    }
+    // ==========================================
+    // ⚠️ আপনার GOOGLE APPS SCRIPT WEB APP URL এখানে বসান
+    // ==========================================
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCWRFoda_SbDUoOmYCMLUFwWuE0jXI2udr-FBsGaV1TSQGeXuNdpOUDS2oer0NSseC4w/exec';
 
+    let registeredMembers = [];
     const canvas = document.getElementById('ticketCanvas');
     const ctx = canvas.getContext('2d');
     let lastRegisteredMember = null;
@@ -341,12 +370,39 @@
     let currentScannedPhone = "";
 
     window.onload = async () => {
-        console.log("Total members loaded:", registeredMembers.length);
-        updateTable();
+        if(SCRIPT_URL === https://script.google.com/macros/s/AKfycbyCWRFoda_SbDUoOmYCMLUFwWuE0jXI2udr-FBsGaV1TSQGeXuNdpOUDS2oer0NSseC4w/exec) {
+            alert("⚠️ দয়া করে আগে কোডের শুরুতে SCRIPT_URL ভেরিয়েবলে আপনার গুগল অ্যাপস স্ক্রিপ্ট লিংকটি বসান!");
+        }
+        await fetchCloudData();
         await drawCardBase("আপনার নাম এখানে", "01712345678", "");
     };
 
-    // TAB SWITCHING MANAGEMENT WITH SCANNER CLEANUP
+    function showLoader(text) {
+        document.getElementById('loadingText').innerText = text;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function hideLoader() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // FETCH ALL DATA FROM GOOGLE SHEETS
+    async function fetchCloudData() {
+        showLoader("গুগল শিট থেকে ডাটাবেস লোড হচ্ছে...");
+        try {
+            const response = await fetch(SCRIPT_URL);
+            registeredMembers = await response.json();
+            console.log("Data sync complete. Count:", registeredMembers.length);
+            updateTable();
+        } catch (e) {
+            console.error("Cloud fetch failed:", e);
+            alert("❌ ক্লাউড ডাটাবেস সিঙ্ক করতে ব্যর্থ! ইন্টারনেট কানেকশন চেক করুন।");
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // TAB SWITCHING MANAGEMENT
     function switchTab(event, tabName) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -358,9 +414,12 @@
         } else {
             stopQRScanner();
         }
+        
+        if (tabName === 'dashboard') {
+            fetchCloudData();
+        }
     }
 
-    // IMAGE LOADING PROMISE HELPER
     function loadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -370,7 +429,7 @@
         });
     }
 
-    // DRAW PASS BLUEPRINT WITH PHOTO INTEGRATION
+    // DRAW PASS BLUEPRINT
     async function drawCardBase(name, phone, photoSrc) {
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, '#0f5132');
@@ -413,31 +472,23 @@
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = 'italic 16px "Baloo 2", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('গেটে কিউআর কোড ও ফটো ভেরিফাই করুন', canvas.width / 2, 405);
+        ctx.fillText('게টে কিউআর কোড ও ফটো ভেরিফাই করুন', canvas.width / 2, 405);
 
-        // Draw QR Code
         const qr = new QRious({ value: phone, size: 150 });
         try {
             const qrImg = await loadImage(qr.toDataURL());
             ctx.drawImage(qrImg, canvas.width - 200, 210, 150, 150);
-        } catch (e) {
-            console.error(e);
-        }
+        } catch (e) { console.error(e); }
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 2;
         ctx.strokeRect(canvas.width - 200, 210, 150, 150);
 
-        // Draw Member Photo
         if (photoSrc) {
             try {
                 const photoImg = await loadImage(photoSrc);
                 ctx.drawImage(photoImg, 50, 210, 150, 150);
-            } catch (e) {
-                drawPhotoPlaceholder();
-            }
-        } else {
-            drawPhotoPlaceholder();
-        }
+            } catch (e) { drawPhotoPlaceholder(); }
+        } else { drawPhotoPlaceholder(); }
         ctx.strokeStyle = '#ffc107';
         ctx.lineWidth = 2;
         ctx.strokeRect(50, 210, 150, 150);
@@ -452,7 +503,7 @@
         ctx.fillText('ফটো যুক্ত নেই', 125, 290);
     }
 
-    // HIGHLY OPTIMIZED IMAGE COMPRESSOR FOR LOCALSTORAGE CAPACITY SAVING
+    // IMAGE COMPRESSOR
     function compressImageFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -461,35 +512,26 @@
                 const img = new Image();
                 img.src = event.target.result;
                 img.onload = () => {
-                    const maxCoord = 150; // Optimized to perfectly match card requirements
+                    const maxCoord = 150;
                     let width = img.width;
                     let height = img.height;
-
                     if (width > height) {
-                        if (width > maxCoord) {
-                            height *= maxCoord / width;
-                            width = maxCoord;
-                        }
+                        if (width > maxCoord) { height *= maxCoord / width; width = maxCoord; }
                     } else {
-                        if (height > maxCoord) {
-                            width *= maxCoord / height;
-                            height = maxCoord;
-                        }
+                        if (height > maxCoord) { width *= maxCoord / height; height = maxCoord; }
                     }
-
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = width;
-                    tempCanvas.height = height;
+                    tempCanvas.width = width; tempCanvas.height = height;
                     const tempCtx = tempCanvas.getContext('2d');
                     tempCtx.drawImage(img, 0, 0, width, height);
-                    resolve(tempCanvas.toDataURL('image/jpeg', 0.60)); // Maximum payload compression optimization
+                    resolve(tempCanvas.toDataURL('image/jpeg', 0.60));
                 };
             };
             reader.onerror = (err) => reject(err);
         });
     }
 
-    // REGISTER MEMBER
+    // REGISTER MEMBER (SEND TO GOOGLE SHEETS)
     async function registerMember(event) {
         event.preventDefault();
         const name = document.getElementById('memberName').value.trim();
@@ -502,39 +544,48 @@
             return;
         }
 
+        showLoader("গুগল শিটে ডাটা সেভ হচ্ছে...");
+
         let compressedPhotoBase64 = '';
         if (photoFileInput) {
             try {
                 compressedPhotoBase64 = await compressImageFile(photoFileInput);
-            } catch (e) {
-                console.error("Compression failed", e);
-            }
+            } catch (e) { console.error("Compression failed", e); }
         }
 
-        const newMember = {
+        const memberData = {
             name, phone, paymentInfo,
-            photoUrl: compressedPhotoBase64,
-            checkedIn: false, mealServed: false, snackServed: false, souvenirGiven: false
+            photoUrl: compressedPhotoBase64
         };
 
-        registeredMembers.push(newMember);
-        lastRegisteredMember = newMember;
-
         try {
-            localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
-            await drawCardBase(name, phone, compressedPhotoBase64);
-            document.getElementById('downloadSingleBtn').style.display = 'block';
-            updateTable();
-            document.getElementById('regForm').reset();
-            alert('✓ ' + name + ' এর ছবিসহ নিবন্ধন সফল হয়েছে!');
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'register', member: memberData })
+            });
+            const result = await response.json();
+            
+            if(result.success) {
+                lastRegisteredMember = { ...memberData, checkedIn: false, mealServed: false, snackServed: false, souvenirGiven: false };
+                registeredMembers.push(lastRegisteredMember);
+                
+                await drawCardBase(name, phone, compressedPhotoBase64);
+                document.getElementById('downloadSingleBtn').style.display = 'block';
+                updateTable();
+                document.getElementById('regForm').reset();
+                alert('✓ ' + name + ' এর তথ্য ক্লাউড ডাটাবেসে সফলভাবে সেভ হয়েছে!');
+            } else if(result.message === 'duplicate') {
+                alert('❌ এই মোবাইল নম্বরটি গুগল শিটে ইতিমধ্যে রয়েছে!');
+            }
         } catch (e) {
-            // Remove the unsaved member from active runtime memory to keep sync intact
-            registeredMembers.pop();
-            alert('❌ ডাটাবেস মেমোরি পূর্ণ! আপলোড করা ছবিটির সাইজ অনেক বড় অথবা স্টোরেজ লিমিট শেষ। অনুগ্রহ করে অন্য বা ছোট সাইজের ছবি ব্যবহার করুন।');
+            console.error("Registration connection error:", e);
+            alert('❌ ক্লাউড সার্ভারে ডাটা পাঠানো যায়নি। অনুগ্রহ করে ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করুন।');
+        } finally {
+            hideLoader();
         }
     }
 
-    // DASHBOARD DATABASE TABLE REFRESH
+    // DASHBOARD TABLE REFRESH
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
@@ -562,17 +613,13 @@
         });
     }
 
-    // QR SCANNER LIFECYCLE MANAGEMENT
+    // QR SCANNER LIFECYCLE
     function startQRScanner() {
         const container = document.getElementById('reader');
         if (container) container.innerHTML = "";
 
         if (html5QrcodeScanner) {
-            try {
-                html5QrcodeScanner.clear();
-            } catch (e) {
-                console.log("Scanner engine restart bypass");
-            }
+            try { html5QrcodeScanner.clear(); } catch (e) {}
             html5QrcodeScanner = null;
         }
 
@@ -591,7 +638,6 @@
                 html5QrcodeScanner = null;
                 currentScannedPhone = "";
             }).catch(err => {
-                console.error("Scanner tracking cleanup redirection:", err);
                 html5QrcodeScanner = null;
                 currentScannedPhone = "";
             });
@@ -607,9 +653,7 @@
         renderBouncerPanel(cleanedText);
     }
 
-    function onScanFailure(error) {
-        // Frame engine tracking bypass
-    }
+    function onScanFailure(error) {}
 
     function manualSearch() {
         const phone = document.getElementById('scanPhone').value.trim();
@@ -640,7 +684,7 @@
                     <p style="margin: 3px 0; color: #666; font-size: 1rem;">💳 <b>পেমেন্ট তথ্য:</b> ${member.paymentInfo}</p>
                 </div>
             </div>
-            <p style="color: #444; font-weight: bold; margin-bottom: 10px; border-left: 3px solid var(--secondary); padding-left: 8px;">সার্ভিস ও বিতরণ কন্ট্রোল (একবারই ক্লিক করা যাবে):</p>
+            <p style="color: #444; font-weight: bold; margin-bottom: 10px; border-left: 3px solid var(--secondary); padding-left: 8px;">সার্ভিস ও বিতরণ কন্ট্রোল (লাইভ গুগল শিট সিঙ্ক):</p>
             
             <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
                 <button class="action-btn ${member.checkedIn ? 'disabled-state' : ''}" 
@@ -670,23 +714,34 @@
         `;
     }
 
-    function updateStatus(phone, property) {
+    // UPDATE STATUS DIRECTLY IN CLOUD
+    async function updateStatus(phone, property) {
         const member = registeredMembers.find(m => m.phone === phone);
         if(!member || member[property]) return;
 
-        member[property] = true;
+        showLoader("গুগল শিটে লাইভ আপডেট করা হচ্ছে...");
+
         try {
-            localStorage.setItem('ssc93_event_db', JSON.stringify(registeredMembers));
-            updateTable();
-            renderBouncerPanel(phone);
-            alert('✓ ডাটাবেস সফলভাবে আপডেট করা হয়েছে!');
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'updateStatus', phone: phone, property: property })
+            });
+            const result = await response.json();
+            
+            if(result.success) {
+                member[property] = true;
+                updateTable();
+                renderBouncerPanel(phone);
+                alert('✓ গুগল শিটে লাইভ স্ট্যাটাস আপডেট সম্পন্ন!');
+            }
         } catch (e) {
-            member[property] = false; // Rollback
-            alert('❌ স্টোরেজ ফুল হওয়ার কারণে আপডেট সেভ করা যায়নি!');
+            console.error("Status update crashed:", e);
+            alert('❌ ক্লাউড আপডেট ব্যর্থ! আপনার ইন্টারনেট কানেকশনটি চেক করুন।');
+        } finally {
+            hideLoader();
         }
     }
 
-    // DOWNLOAD INDIVIDUAL CARD
     function downloadSingleCard() {
         if (!lastRegisteredMember) return;
         let link = document.createElement('a');
@@ -695,31 +750,42 @@
         link.click();
     }
 
-    // BULK ARCHIVE ENGINE (.ZIP)
+    // BULK ARCHIVE ENGINE (.ZIP) - OPTIMIZED FOR LARGE REUNIONS
     async function exportAllToZip() {
-        if(registeredMembers.length === 0) return alert('❌ কোনো ডাটা নেই!');
+        if(registeredMembers.length === 0) return alert('❌ ডেটাবেসে কোনো মেম্বার নেই!');
+        
+        const userConfirm = confirm(`আপনি ${registeredMembers.length} টি ডিজিটাল পাস জেনারেট করে জিপ ফাইল ডাউনলোড করতে চাচ্ছেন। ১০০০ জন মেম্বারের ক্ষেত্রে এই প্রসেসটি সম্পন্ন হতে ১-২ মিনিট সময় নিতে পারে এবং ব্রাউজার সাময়িক স্লো হতে পারে। আপনি কি শুরু করতে চান?`);
+        if(!userConfirm) return;
+
         const zip = new JSZip();
+        showLoader("বাল্ক জিপ ফাইল তৈরি হচ্ছে... অনুগ্রহ করে ব্রাউজার বন্ধ করবেন না।");
         
-        alert('📦 সব কার্ড প্রসেস হচ্ছে, ছবির সাইজের উপর ভিত্তি করে কিছু সময় লাগতে পারে। অনুগ্রহ করে অপেক্ষা করুন...');
-        
-        for (let i = 0; i < registeredMembers.length; i++) {
-            const m = registeredMembers[i];
-            await drawCardBase(m.name, m.phone, m.photoUrl);
-            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            zip.file(`${m.name}_${m.phone}_Pass.png`, blob);
+        try {
+            for (let i = 0; i < registeredMembers.length; i++) {
+                const m = registeredMembers[i];
+                await drawCardBase(m.name, m.phone, m.photoUrl);
+                const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+                zip.file(`${m.name}_${m.phone}_Pass.png`, blob);
+            }
+            
+            // Revert canvas to original or last registered view
+            if(lastRegisteredMember) {
+                await drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone, lastRegisteredMember.photoUrl);
+            } else {
+                await drawCardBase("আপনার নাম এখানে", "01712345678", "");
+            }
+            
+            const zipContent = await zip.generateAsync({ type: 'blob' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(zipContent);
+            link.download = 'Reunion_2026_All_Passes.zip';
+            link.click();
+        } catch(err) {
+            console.error(err);
+            alert("❌ বাল্ক জিপ ফাইল তৈরিতে সমস্যা হয়েছে। মেমোরি লোড কমাতে কম মেম্বার দিয়ে চেষ্টা করুন।");
+        } finally {
+            hideLoader();
         }
-        
-        if(lastRegisteredMember) {
-            await drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone, lastRegisteredMember.photoUrl);
-        } else {
-            await drawCardBase("আপনার নাম এখানে", "01712345678", "");
-        }
-        
-        const zipContent = await zip.generateAsync({ type: 'blob' });
-        let link = document.createElement('a');
-        link.href = URL.createObjectURL(zipContent);
-        link.download = 'Eid_Bondhu_Adda_2026_All_Passes.zip';
-        link.click();
     }
 </script>
 </body>
