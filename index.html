@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ঈদ বন্ধু আড্ডা ২০২৬ - SSC 93 Pirojpur</title>
+    <!-- JSZip for Bulk Downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #0f5132;
+            --secondary: #ffc107;
+            --dark: #212529;
+            --light: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            margin: 0;
+            padding: 20px;
+            color: var(--dark);
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary), #146c43);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; font-size: 2.5rem; color: var(--secondary); }
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(300px, 1fr) 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background-color: #146c43; }
+        .btn-secondary { background-color: #6c757d; margin-top: 10px;}
+        .btn-secondary:hover { background-color: #5c636a; }
+        .btn-download { background-color: #0dcaf0; color: var(--dark); margin-top: 15px;}
+        canvas {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 15px;
+        }
+        .admin-section {
+            margin-top: 40px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th { background-color: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ঈদ বন্ধু আড্ডা ২০২৬</h1>
+        <p style="margin: 5px 0 0 0; font-size: 1.2rem;">SSC 93 Pirojpur Reunion Platform</p>
+    </header>
+
+    <div class="grid">
+        <!-- Registration Form -->
+        <div class="card">
+            <h2>সদস্য নিবন্ধন (Registration)</h2>
+            <form id="regForm" onsubmit="registerMember(event)">
+                <div class="form-group">
+                    <label>বন্ধুর নাম (Name):</label>
+                    <input type="text" id="memberName" required placeholder="Ex: ইফফাত হাসান">
+                </div>
+                <div class="form-group">
+                    <label>মোবাইল নম্বর (Mobile):</label>
+                    <input type="tel" id="memberPhone" required placeholder="017XXXXXXXX">
+                </div>
+                <div class="form-group">
+                    <label>টি-শার্ট সাইজ (T-Shirt Size):</label>
+                    <select id="tshirtSize">
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                    </select>
+                </div>
+                <button type="submit">নিবন্ধন সম্পন্ন করুন</button>
+            </form>
+        </div>
+
+        <!-- Live Card Preview Container -->
+        <div class="card" style="text-align: center;">
+            <h2>আপনার আমন্ত্রণ পত্র</h2>
+            <canvas id="ticketCanvas" width="800" height="450"></canvas>
+            <button class="button btn-download" id="downloadSingleBtn" style="display:none;" onclick="downloadSingleCard()">কার্ডটি ডাউনলোড করুন (PNG)</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel Dashboard -->
+    <div class="admin-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <h2>নিবন্ধিত বন্ধুদের তালিকা (Admin Dashboard)</h2>
+            <button onclick="exportAllToZip()" style="width: auto; background-color: var(--secondary); color: var(--dark);">সব কার্ড একসাথে ডাউনলোড (.ZIP)</button>
+        </div>
+        <table id="membersTable">
+            <thead>
+                <tr>
+                    <th>নাম</th>
+                    <th>মোবাইল</th>
+                    <th>সাইজ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dynamic Content Loads Here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Load existing members from local browser database or setup empty array
+    let registeredMembers = JSON.parse(localStorage.getItem('ssc93_members')) || [];
+    const canvas = document.getElementById('ticketCanvas');
+    const ctx = canvas.getContext('2d');
+    let lastRegisteredMember = null;
+
+    // Initialize the app view
+    window.onload = function() {
+        updateTable();
+        drawCardBase("আপনার নাম এখানে");
+    };
+
+    // Draw festive identity card canvas layout
+    function drawCardBase(name, phone = "") {
+        // Background color fill (Festive Green theme)
+        ctx.fillStyle = "#0f5132";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Gold inner border framing
+        ctx.strokeStyle = "#ffc107";
+        ctx.lineWidth = 10;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+        // Event Branding Titles
+        ctx.fillStyle = "#ffc107";
+        ctx.font = "bold 42px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("ঈদ বন্ধু আড্ডা ২০২৬", canvas.width / 2, 90);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "24px Arial";
+        ctx.fillText("SSC 93 Pirojpur Reunion", canvas.width / 2, 135);
+
+        // Decorative separating line
+        ctx.fillStyle = "#ffc107";
+        ctx.fillRect(150, 160, canvas.width - 300, 3);
+
+        // Dynamic Member Details Text
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 36px Arial";
+        ctx.fillText(name, canvas.width / 2, 250);
+
+        if(phone) {
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "#b6effb";
+            ctx.fillText("মোবail: " + phone, canvas.width / 2, 300);
+        }
+
+        // Footnote Entry Pass verification text
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.font = "italic 18px Arial";
+        ctx.fillText("এই কার্ডটি অনুষ্ঠানস্থলে প্রবেশের জন্য প্রদর্শন করুন", canvas.width / 2, 390);
+    }
+
+    // Process new user registration submission
+    function registerMember(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('memberName').value;
+        const phone = document.getElementById('memberPhone').value;
+        const size = document.getElementById('tshirtSize').value;
+
+        const newMember = { name, phone, size };
+        registeredMembers.push(newMember);
+        lastRegisteredMember = newMember;
+
+        // Save to browser cache storage
+        localStorage.setItem('ssc93_members', JSON.stringify(registeredMembers));
+
+        // Update visual interfaces
+        updateTable();
+        drawCardBase(name, phone);
+        document.getElementById('downloadSingleBtn').style.display = "block";
+        
+        // Reset form variables safely
+        document.getElementById('regForm').reset();
+    }
+
+    // Refresh dynamic table presentation row structures
+    function updateTable() {
+        const tbody = document.querySelector('#membersTable tbody');
+        tbody.innerHTML = '';
+        
+        registeredMembers.forEach(member => {
+            const row = `<tr>
+                <td>${member.name}</td>
+                <td>${member.phone}</td>
+                <td><span style="background:#e2e3e5; padding:3px 8px; border-radius:4px;">${member.size}</span></td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // Direct image exporter engine for current viewing session
+    function downloadSingleCard() {
+        if (!lastRegisteredMember) return;
+        let link = document.createElement('a');
+        link.download = `${lastRegisteredMember.name}_Eid_Adda_2026.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // Bulk automation packaging processor zip output logic
+    async function exportAllToZip() {
+        if(registeredMembers.length === 0) {
+            alert("ডাউনলোড করার মত কোনো নিবন্ধিত সদস্য এখনো নেই!");
+            return;
+        }
+        
+        const zip = new JSZip();
+        
+        for (let i = 0; i < registeredMembers.length; i++) {
+            const member = registeredMembers[i];
+            
+            // Re-render current user snapshot directly to target canvas bounds
+            drawCardBase(member.name, member.phone);
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            zip.file(`${member.name}_Eid_Adda_2026.png`, blob);
+        }
+        
+        // Re-compile canvas tracking back safely to context defaults
+        if(lastRegisteredMember) {
+            drawCardBase(lastRegisteredMember.name, lastRegisteredMember.phone);
+        } else {
+            drawCardBase("আপনার নাম এখানে");
+        }
+        
+        // Output compressed package payload file downstream safely
+        const zipContent = await zip.generateAsync({ type: "blob" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(zipContent);
+        link.download = "Eid_Bondhu_Adda_2026_All_Cards.zip";
+        link.click();
+    }
+</script>
+</body>
+</html>
