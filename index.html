@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ঈদ বন্ধু আড্ডা ২০২৬ - Gate & Payment Control</title>
+    <title>ঈদ বন্ধু আড্ডা ২০२६ - Gate & Payment Control</title>
     <!-- Libraries for ZIP, QR Code, and Camera Scanner -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -80,7 +80,7 @@
         .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
         .status-pass { background: #d1e7dd; color: #0f5132; }
         .status-fail { background: #f8d7da; color: #842029; }
-        .scan-action-btn { padding: 6px 12px; margin: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; background: #f8f9fa; color: #212529;}
+        .scan-action-btn { padding: 6px 12px; margin: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px; text-align: left; background: white; }
         .scan-action-btn.taken { background: #198754; color: white; border-color: #198754; }
     </style>
 </head>
@@ -88,7 +88,7 @@
 
 <div class="container">
     <header>
-        <h1>ঈদ বন্ধু আড্ডা ২০২৬</h1>
+        <h1>ঈদ বন্ধু আড্ডা २०२६</h1>
         <p style="margin: 5px 0 0 0;">SSC 93 Pirojpur - Access & Souvenir Management</p>
     </header>
 
@@ -128,7 +128,7 @@
             <div class="card" style="text-align: center;">
                 <h2>আপনার ডিজিটাল এন্ট্রি পাস</h2>
                 <canvas id="ticketCanvas" width="800" height="450"></canvas>
-                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন (PNG)</button>
+                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন</button>
             </div>
         </div>
     </div>
@@ -169,7 +169,7 @@
             <div class="card" id="scanResultCard">
                 <h2>স্ক্যান ফলাফল (Scanner Output)</h2>
                 <div id="scanDetails" style="font-size:1.1rem; line-height:1.8;">
-                    <p style="color:#6c757d;">অনুগ্রহ করে একটি প্রবেশপত্রের কিউআর কোড ক্যামেরার সামনে ধরুন...</p>
+                    <p style="color:#6c757d;">অনুগ্রহ করে একটি প্রবেশপত্রের কিউআর কোড ক্যামেরার সামনে রাখুন।</p>
                 </div>
             </div>
         </div>
@@ -183,7 +183,11 @@
     let lastRegisteredMember = null;
     let html5QrcodeScanner = null;
 
-    window.onload = () => { updateTable(); drawCardBase("বন্ধুর নাম এখানে", "017XXXXXXXX"); };
+    window.onload = () => { 
+        console.log("Loaded members:", registeredMembers);
+        updateTable(); 
+        drawCardBase("বন্ধুর নাম এখানে", "017XXXXXXXX"); 
+    };
 
     // Handle application tab layout toggles
     function switchTab(viewId) {
@@ -211,7 +215,7 @@
             ctx.fillStyle = "#ffc107";
             ctx.font = "bold 38px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("ঈদ বন্ধু আড্ডা ২০২৬", canvas.width / 2 + 50, 85);
+            ctx.fillText("ঈদ বন্ধু আড্ডা २०२६", canvas.width / 2 + 50, 85);
             ctx.fillStyle = "#ffffff";
             ctx.font = "20px Arial";
             ctx.fillText("SSC 93 Pirojpur Reunion Pass", canvas.width / 2 + 50, 125);
@@ -272,10 +276,10 @@
         const name = document.getElementById('memberName').value;
         const phone = document.getElementById('memberPhone').value.trim();
         const photoFile = document.getElementById('memberPhoto').files[0];
-        const paymentInfo = document.getElementById('paymentInfo').value; // Captured payment track info
+        const paymentInfo = document.getElementById('paymentInfo').value;
 
         if(registeredMembers.some(m => m.phone === phone)) {
-            alert("এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে নিবন্ধন করা হয়েছে!");
+            alert("এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে নিবন্ধন করা হয়েছে!");
             return;
         }
 
@@ -283,18 +287,22 @@
         reader.onload = async function(e) {
             const photoDataUrl = e.target.result;
             const newMember = { 
-                name, phone, photo: photoDataUrl, paymentInfo, // Added into object array storage
+                name, phone, photo: photoDataUrl, paymentInfo,
                 checkedIn: false, meal: false, snack: false, souvenir: false 
             };
 
             registeredMembers.push(newMember);
             lastRegisteredMember = newMember;
             localStorage.setItem('ssc93_gate_db', JSON.stringify(registeredMembers));
+            
+            console.log("New member added:", newMember);
+            console.log("Total members:", registeredMembers);
 
             await drawCardBase(name, phone, photoDataUrl);
             document.getElementById('downloadSingleBtn').style.display = "block";
             updateTable();
             document.getElementById('regForm').reset();
+            alert("নিবন্ধন সফল হয়েছে!");
         };
         reader.readAsDataURL(photoFile);
     }
@@ -302,6 +310,12 @@
     function updateTable() {
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
+        
+        if(registeredMembers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="color:#999; text-align:center;">এখনো কোনো নিবন্ধন নেই</td></tr>';
+            return;
+        }
+        
         registeredMembers.forEach(m => {
             tbody.innerHTML += `<tr>
                 <td><b>${m.name}</b></td>
@@ -357,7 +371,7 @@
                 </div>
                 <b>নাম:</b> ${member.name}<br>
                 <b>মোবাইল:</b> ${member.phone}<br>
-                <b>রেজিঃ ফি পেমেন্ট তথ্য:</b> <span style="color:#664d03; background:#fff3cd; padding:2px 6px; border-radius:4px;">${member.paymentInfo || 'N/A'}</span><br><br>
+                <b>রেজিঃ ফি পেমেন্ট তথ্য:</b> <span style="color:#664d03; background:#fff3cd; padding:2px 6px; border-radius:4px;">${member.paymentInfo || 'N/A'}</span>
                 <hr style="border:1px dashed #ccc;"><br>
                 <button class="scan-action-btn ${member.checkedIn?'taken':''}" onclick="toggleStatus('${member.phone}', 'checkedIn')">🏢 Gate Entry: ${member.checkedIn?'Checked In':'Mark Attendance'}</button>
                 <button class="scan-action-btn ${member.meal?'taken':''}" onclick="toggleStatus('${member.phone}', 'meal')">🍽️ Lunch/Meal: ${member.meal?'Served':'Mark Served'}</button>
