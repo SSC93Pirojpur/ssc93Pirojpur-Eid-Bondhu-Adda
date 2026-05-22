@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ঈদ বন্ধু আড্ডা ২০২৬ - Gate & Souvenir Control</title>
+    <title>ঈদ বন্ধু আড্ডা ২০২৬ - Gate & Payment Control</title>
     <!-- Libraries for ZIP, QR Code, and Camera Scanner -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -117,6 +117,11 @@
                         <label>ছবি আপলোড করুন (Upload Photo):</label>
                         <input type="file" id="memberPhoto" accept="image/*" required>
                     </div>
+                    <!-- New Payment Info Field Added Here -->
+                    <div class="form-group">
+                        <label>রেজিঃ ফি পাঠানো বিকাশ/ নগদ নম্বর /বন্ধুর নাম:</label>
+                        <input type="text" id="paymentInfo" required placeholder="Ex: 017XXXXXXXX / রফিক">
+                    </div>
                     <button type="submit">নিবন্ধন ও কার্ড তৈরি করুন</button>
                 </form>
             </div>
@@ -141,6 +146,7 @@
                         <tr>
                             <th>নাম</th>
                             <th>মোবাইল</th>
+                            <th>পেমেন্ট তথ্য</th>
                             <th>প্রবেশ</th>
                             <th>খাবার (Meal)</th>
                             <th>নাস্তা (Snack)</th>
@@ -179,13 +185,13 @@
 
     window.onload = () => { updateTable(); drawCardBase("বন্ধুর নাম এখানে", "017XXXXXXXX"); };
 
+    // Handle application tab layout toggles
     function switchTab(viewId) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
         event.target.classList.add('active');
 
-        // Start camera scanner only if Scanner tab is active
         if(viewId === 'scanner-view') {
             startScanner();
         } else if (html5QrcodeScanner) {
@@ -196,14 +202,12 @@
     // High-fidelity card layout design engine
     function drawCardBase(name, phone, photoSrc = null) {
         return new Promise((resolve) => {
-            // Draw foundational green badge layout
             ctx.fillStyle = "#0f5132";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = "#ffc107";
             ctx.lineWidth = 10;
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
-            // Branding titles
             ctx.fillStyle = "#ffc107";
             ctx.font = "bold 38px Arial";
             ctx.textAlign = "center";
@@ -212,7 +216,6 @@
             ctx.font = "20px Arial";
             ctx.fillText("SSC 93 Pirojpur Reunion Pass", canvas.width / 2 + 50, 125);
 
-            // Dynamic User Profile Data layout
             ctx.textAlign = "left";
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 32px Arial";
@@ -225,7 +228,6 @@
             ctx.font = "italic 16px Arial";
             ctx.fillText("নিরাপত্তা ভেরিফিকেশনের জন্য গেটে এই কিউআর প্রদর্শন করুন।", 260, 390);
 
-            // Synchronous visual generation handling (Photo & QR Code setup)
             let loadedCount = 0;
             const targetLoads = (photoSrc ? 1 : 0) + 1;
 
@@ -234,7 +236,6 @@
                 if(loadedCount === targetLoads) resolve();
             }
 
-            // Generate integrated tracking QR payload
             const qr = new QRious({ value: phone, size: 150 });
             const qrImg = new Image();
             qrImg.src = qr.toDataURL();
@@ -243,7 +244,6 @@
                 checkDone();
             };
 
-            // Render Member Picture frame bounds
             if(photoSrc) {
                 const profileImg = new Image();
                 profileImg.src = photoSrc;
@@ -272,8 +272,8 @@
         const name = document.getElementById('memberName').value;
         const phone = document.getElementById('memberPhone').value.trim();
         const photoFile = document.getElementById('memberPhoto').files[0];
+        const paymentInfo = document.getElementById('paymentInfo').value; // Captured payment track info
 
-        // Check for duplicate profiles
         if(registeredMembers.some(m => m.phone === phone)) {
             alert("এই মোবাইল নম্বরটি দিয়ে ইতিমধ্যে নিবন্ধন করা হয়েছে!");
             return;
@@ -283,7 +283,7 @@
         reader.onload = async function(e) {
             const photoDataUrl = e.target.result;
             const newMember = { 
-                name, phone, photo: photoDataUrl,
+                name, phone, photo: photoDataUrl, paymentInfo, // Added into object array storage
                 checkedIn: false, meal: false, snack: false, souvenir: false 
             };
 
@@ -306,6 +306,7 @@
             tbody.innerHTML += `<tr>
                 <td><b>${m.name}</b></td>
                 <td>${m.phone}</td>
+                <td><span style="background:#fff3cd; color:#664d03; padding:4px 8px; border-radius:4px; font-size:0.9rem;">${m.paymentInfo || 'N/A'}</span></td>
                 <td><span class="status-badge ${m.checkedIn?'status-pass':'status-fail'}">${m.checkedIn?'ভিতরে':'অনুপস্থিত'}</span></td>
                 <td><span class="status-badge ${m.meal?'status-pass':'status-fail'}">${m.meal?'গৃহীত':'বাকি'}</span></td>
                 <td><span class="status-badge ${m.snack?'status-pass':'status-fail'}">${m.snack?'গৃহীত':'বাকি'}</span></td>
@@ -322,7 +323,6 @@
         link.click();
     }
 
-    // Dynamic Bulk Generation Process Engine
     async function exportAllToZip() {
         if(registeredMembers.length === 0) return alert("কোনো ডাটা নেই!");
         const zip = new JSZip();
@@ -356,7 +356,8 @@
                     <img src="${member.photo}" style="width:120px; height:140px; border-radius:6px; object-fit:cover; border:3px solid var(--primary);">
                 </div>
                 <b>নাম:</b> ${member.name}<br>
-                <b>মোবাইল:</b> ${member.phone}<br><br>
+                <b>মোবাইল:</b> ${member.phone}<br>
+                <b>রেজিঃ ফি পেমেন্ট তথ্য:</b> <span style="color:#664d03; background:#fff3cd; padding:2px 6px; border-radius:4px;">${member.paymentInfo || 'N/A'}</span><br><br>
                 <hr style="border:1px dashed #ccc;"><br>
                 <button class="scan-action-btn ${member.checkedIn?'taken':''}" onclick="toggleStatus('${member.phone}', 'checkedIn')">🏢 Gate Entry: ${member.checkedIn?'Checked In':'Mark Attendance'}</button>
                 <button class="scan-action-btn ${member.meal?'taken':''}" onclick="toggleStatus('${member.phone}', 'meal')">🍽️ Lunch/Meal: ${member.meal?'Served':'Mark Served'}</button>
@@ -374,7 +375,7 @@
             member[property] = !member[property];
             localStorage.setItem('ssc93_gate_db', JSON.stringify(registeredMembers));
             updateTable();
-            onScanSuccess(phone); // Refresh screen view data instantly
+            onScanSuccess(phone);
         }
     }
 </script>
