@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -260,7 +260,7 @@
             <div class="card" style="text-align: center;">
                 <h2>আপনার ডিজিটাল পাস</h2>
                 <canvas id="ticketCanvas" width="800" height="450"></canvas>
-                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন 📥</button>
+                <button id="downloadSingleBtn" style="display:none; margin-top:15px; background:#0dcaf0; color:black;" onclick="downloadSingleCard()">কার্ড ডাউনলোড করুন</button>
             </div>
         </div>
     </div>
@@ -309,7 +309,7 @@
             <div class="card">
                 <h2>সদস্য ভেরিফিকেশন প্যানেল</h2>
                 <div id="scanDetails" style="color: #999;">
-                    ক্যামেরার সামনে কিউআর কোড ধরুন অথবা মোবাইল নম্বর দিয়ে সার্চ করুন।
+                    ক্যামেরার সামনে কিউআর কোড ধরুন অথবা মোবাইল নম্বর দিয়ে সার্চ করুন।
                 </div>
             </div>
         </div>
@@ -358,7 +358,7 @@
             updateTable();
         } catch (e) {
             console.error(e);
-            alert("❌ ক্লাউড ডাটাবেস সিঙ্ক করতে ব্যর্থ! ডেপ্লয়মেন্ট সেটিংস চেক করুন।");
+            alert("❌ ক্লাউড ডাটাবেস সিঙ্ক করতে ব্যর্থ! ডেপ্লয়মেন্ট সেটিংস চেক করুন।");
         } finally {
             hideLoader();
         }
@@ -408,7 +408,7 @@
 
         ctx.fillStyle = '#ffffff';
         ctx.font = '22px "Baloo 2", sans-serif';
-        ctx.fillText('আয়োজনেঃ এসএসসি-৯৩ পিরোজপুর', canvas.width / 2, 135);
+        ctx.fillText('আয়োজনেঃ এসএসসি-৯৩ পিরোজপুর', canvas.width / 2, 135);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 38px "Baloo 2", sans-serif';
@@ -481,7 +481,9 @@
         if (photoFileInput) {
             try {
                 compressedPhotoBase64 = await compressImageFile(photoFileInput);
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Image compression failed:", e);
+            }
         }
 
         const memberData = { name, phone, paymentInfo, photoUrl: compressedPhotoBase64 };
@@ -515,7 +517,7 @@
             document.getElementById('downloadSingleBtn').style.display = 'block';
             updateTable();
             document.getElementById('regForm').reset();
-            alert('✓ ' + name + ' এর তথ্য সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!');
+            alert('✓ ' + name + ' এর তথ্য সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!');
         } catch (e) {
             alert('❌ সার্ভার কানেকশন ত্রুটি!');
         } finally {
@@ -527,12 +529,15 @@
         const tbody = document.querySelector('#membersTable tbody');
         tbody.innerHTML = '';
         if(registeredMembers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">কোনো ডাটা পাওয়া যায়নি</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">কোনো ডাটা পাওয়া যায়নি</td></tr>';
             return;
         }
+        
+        // FIX: Build HTML first, then assign once (performance improvement)
+        let html = '';
         registeredMembers.forEach(m => {
             const avatarHtml = m.photoUrl ? `<img src="${m.photoUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:50%;">` : `No Photo`;
-            tbody.innerHTML += `<tr>
+            html += `<tr>
                 <td>${avatarHtml}</td>
                 <td><b>${m.name}</b></td>
                 <td>${m.phone}</td>
@@ -543,6 +548,7 @@
                 <td><span class="status-badge ${m.souvenirGiven ? 'status-pass' : 'status-fail'}">${m.souvenirGiven ? '✓ সম্পন্ন' : '✗ বাকি'}</span></td>
             </tr>`;
         });
+        tbody.innerHTML = html;
     }
 
     function startQRScanner() {
@@ -554,7 +560,15 @@
     }
 
     function stopQRScanner() {
-        // Keeps instantiation safely in memory to prevent rapid layout collapse crashes
+        // Properly clear the QR scanner when leaving bouncer tab
+        if (html5QrcodeScanner) {
+            try {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            } catch (err) {
+                console.warn("QR Scanner cleanup warning:", err);
+            }
+        }
         currentScannedPhone = "";
     }
 
@@ -576,19 +590,29 @@
         const resultDiv = document.getElementById('scanDetails');
 
         if(!member) {
-            resultDiv.innerHTML = '<p style="color:red; font-weight:bold; text-align:center;">❌ সদস্য তথ্য পাওয়া যায়নি</p>';
+            resultDiv.innerHTML = '<p style="color:red; font-weight:bold; text-align:center;">❌ সদস্য তথ্য পাওয়া যায়নি</p>';
             return;
         }
 
+        // FIX: Use data attributes instead of inline onclick with phone number to prevent XSS
         resultDiv.innerHTML = `
             <h3>👤 নাম: ${member.name}</h3>
             <p>📱 মোবাইল: ${member.phone}</p>
             <hr>
-            <button class="action-btn ${member.checkedIn ? 'disabled-state' : ''}" onclick="updateStatus('${phone}', 'checkedIn')" ${member.checkedIn ? 'disabled' : ''}>${member.checkedIn ? '🔒 প্রবেশ সম্পন্ন' : '🚪 প্রবেশ নিশ্চিত করুন'}</button>
-            <button class="action-btn ${member.mealServed ? 'disabled-state' : ''}" onclick="updateStatus('${phone}', 'mealServed')" ${member.mealServed ? 'disabled' : ''}>${member.mealServed ? '🔒 খাবার বিতরণ সম্পন্ন' : '🍽️ দুপুরের খাবার দিন'}</button>
-            <button class="action-btn ${member.snackServed ? 'disabled-state' : ''}" onclick="updateStatus('${phone}', 'snackServed')" ${member.snackServed ? 'disabled' : ''}>${member.snackServed ? '🔒 নাস্তা বিতরণ সম্পন্ন' : '🥤 বিকেলের নাস্তা দিন'}</button>
-            <button class="action-btn ${member.souvenirGiven ? 'disabled-state' : ''}" onclick="updateStatus('${phone}', 'souvenirGiven')" ${member.souvenirGiven ? 'disabled' : ''}>${member.souvenirGiven ? '🔒 স্মারক বিতরণ সম্পন্ন' : '🎁 উৎসব স্মারক দিন'}</button>
+            <button class="action-btn ${member.checkedIn ? 'disabled-state' : ''}" data-phone="${member.phone}" data-property="checkedIn" ${member.checkedIn ? 'disabled' : ''}>${member.checkedIn ? '🔒 প্রবেশ সম্পন্ন' : '✅ প্রবেশ অনুমোদন'}</button>
+            <button class="action-btn ${member.mealServed ? 'disabled-state' : ''}" data-phone="${member.phone}" data-property="mealServed" ${member.mealServed ? 'disabled' : ''}>${member.mealServed ? '🔒 খাবার দেওয়া হয়েছে' : '✅ খাবার দিন'}</button>
+            <button class="action-btn ${member.snackServed ? 'disabled-state' : ''}" data-phone="${member.phone}" data-property="snackServed" ${member.snackServed ? 'disabled' : ''}>${member.snackServed ? '🔒 নাস্তা দেওয়া হয়েছে' : '✅ নাস্তা দিন'}</button>
+            <button class="action-btn ${member.souvenirGiven ? 'disabled-state' : ''}" data-phone="${member.phone}" data-property="souvenirGiven" ${member.souvenirGiven ? 'disabled' : ''}>${member.souvenirGiven ? '🔒 স্মারক দেওয়া হয়েছে' : '✅ স্মারক দিন'}</button>
         `;
+        
+        // Add event listeners to buttons
+        document.querySelectorAll('#scanDetails .action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!e.target.disabled) {
+                    updateStatus(e.target.dataset.phone, e.target.dataset.property);
+                }
+            });
+        });
     }
 
     async function updateStatus(phone, property) {
@@ -654,15 +678,3 @@
 </script>
 </body>
 </html>
-
-async function stopQRScanner() {
-    if (html5QrcodeScanner) {
-        try {
-            await html5QrcodeScanner.clear();
-            html5QrcodeScanner = null;
-        } catch (err) {
-            console.error("ক্যামেরা বন্ধ করতে সমস্যা হয়েছে:", err);
-        }
-    }
-    currentScannedPhone = "";
-}
